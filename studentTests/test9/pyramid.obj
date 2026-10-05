@@ -1,0 +1,24 @@
+# test9 - hand-written pyramid: 5 vertices, 5 UVs, 5 normals, 6 triangles.
+# Base square at y = 0 spanning x,z in [-1,1]; apex at (0, 1.6, 0).
+# Used by scene.pbrt. No external tools are needed to write or read this file.
+v -1.0 0.0 -1.0
+v  1.0 0.0 -1.0
+v  1.0 0.0  1.0
+v -1.0 0.0  1.0
+v  0.0 1.6 0.0
+vt 0.0 0.0
+vt 1.0 0.0
+vt 1.0 1.0
+vt 0.0 1.0
+vt 0.5 1.0
+vn 0.0 0.0 -1.0
+vn 1.0 0.0 0.0
+vn 0.0 0.0 1.0
+vn -1.0 0.0 0.0
+vn 0.0 0.894427 0.447214
+f 1/1/1 2/2/1 5/5/5
+f 2/2/2 3/3/2 5/5/5
+f 3/3/3 4/4/3 5/5/5
+f 4/4/4 1/1/4 5/5/5
+f 1/1/1 3/3/1 2/2/1
+f 1/1/1 4/4/1 3/3/1

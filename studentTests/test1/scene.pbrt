@@ -1,0 +1,19 @@
+# test1 - WSRT: ideal mirror reflection, point light and hard shadows.
+# A chrome sphere above a matte floor. The mirror lobe must recurse until the
+# ray leaves the scene (a reflection of the floor inside the sphere), the point
+# light must produce a soft-edged hard shadow, and the floor must stay matte.
+
+Integrator "whitted" { "integer maxdepth" 8 }
+Film "film" { "integer xresolution" 240 "integer yresolution" 180 }
+Camera "camera" { "lookat" 0 2.2 7.5  0 1.0 0  0 1 0  "float fov" 40 }
+
+Material "floor" { "diffuse" "reflectance" [ 0.72 0.70 0.66 ] }
+Material "chrome" { "mirror" "reflectance" [ 0.95 0.95 0.97 ] }
+Material "red" { "diffuse" "reflectance" [ 0.65 0.12 0.10 ] }
+
+Shape "ground" { "plane" [ 0 0 0 ] "rotate" 1 0 0 -90  "material" "floor" }
+Shape "ball"  { "sphere" [ 1.1 ] "translate" 0 1.1 0  "material" "chrome" }
+Shape "marker" { "sphere" [ 0.35 ] "translate" -2.2 0.35 1.4  "material" "red" }
+
+Light "key" { "point" [ -3.5 5.5 4.5 ] "radiantintensity" [ 42 40 38 ] }
+Light "fill" { "point" [ 4.0 3.0 3.0 ] "radiantintensity" [ 10 10 12 ] }

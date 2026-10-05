@@ -1,0 +1,119 @@
+# WSRT_simple -- every Module 1 WSRT feature in one image.
+#
+# Features on show (the report annotates these with arrows / insets):
+#   1. ideal mirror reflection   : the mirror sphere on the left, and the
+#                                  reflections of the spheres in the chrome ball
+#   2. specular refraction       : the glass sphere in the centre (Snell + Fresnel
+#                                  + total internal reflection)
+#   3. Blinn-Phong shading       : the red and green spheres
+#   4. point lights              : two point lights, left and right
+#   5. shadows + self-shadowing  : cast shadows on the textured ground plane
+#   6. UV textures               : the checker texture on the floor, the
+#                                  checker pattern mapped onto the blue sphere
+#   7. geometry                  : plane (floor), spheres, individual triangles
+
+Integrator "whitted" {
+    "integer maxdepth" 8
+}
+
+Film "simple" {
+    "integer xresolution" 900
+    "integer yresolution" 560
+}
+
+Camera "cam" {
+    "lookat" 0 1.6 9.5   0 1.0 0   0 1 0
+    "float fov" 38
+}
+
+# ---- materials ---------------------------------------------------------
+Material "floor" {
+    "diffuse" "reflectance" [ 0.75 0.72 0.68 ]
+    "texture" "diffuse" "textures/checker.ppm"
+    "float uscale" 4
+    "float vscale" 4
+}
+Material "redBall" {
+    "blinnphong" "reflectance" [ 0.65 0.10 0.10 ] "specularreflectance" [ 0.9 0.9 0.9 ] "shininess" 120
+}
+Material "greenBall" {
+    "blinnphong" "reflectance" [ 0.12 0.55 0.20 ] "specularreflectance" [ 0.7 0.7 0.7 ] "shininess" 60
+}
+Material "chrome" {
+    "mirror" "reflectance" [ 0.95 0.96 0.97 ]
+}
+Material "glass" {
+    "dielectric" "reflectance" [ 1 1 1 ] "float eta" 1.52
+}
+Material "texturedBall" {
+    "blinnphong" "reflectance" [ 0.7 0.7 0.7 ] "specularreflectance" [ 0.25 0.25 0.25 ] "shininess" 40
+    "texture" "diffuse" "textures/checker.ppm"
+    "float uscale" 2
+    "float vscale" 1
+}
+Material "triMat" {
+    "blinnphong" "reflectance" [ 0.80 0.35 0.10 ] "specularreflectance" [ 0.4 0.4 0.4 ] "shininess" 30
+}
+
+# ---- geometry ----------------------------------------------------------
+# pbrt's plane is the xy plane with normal +z, so it has to be rotated by -90
+# degrees about x to act as a floor.
+Shape "ground" {
+    "plane" [ 0 0 0 ]
+    "rotate" 1 0 0 -90
+    "material" "floor"
+}
+
+# 1. mirror: reflect the room and the other spheres
+Shape "mirrorSphere" {
+    "sphere" [ 0.85 ]
+    "translate" -3.1 0.85 0
+    "material" "chrome"
+}
+
+# 2. refraction: glass ball
+Shape "glassSphere" {
+    "sphere" [ 0.95 ]
+    "translate" -0.55 0.95 0.6
+    "material" "glass"
+}
+
+# 3. Blinn-Phong diffuse + specular
+Shape "redSphere" {
+    "sphere" [ 0.8 ]
+    "translate" 1.5 0.8 -0.4
+    "material" "redBall"
+}
+Shape "greenSphere" {
+    "sphere" [ 0.65 ]
+    "translate" 2.9 0.65 1.2
+    "material" "greenBall"
+}
+
+# 6. texture on a sphere
+Shape "texturedSphere" {
+    "sphere" [ 0.7 ]
+    "translate" -2.0 0.7 2.0
+    "material" "texturedBall"
+}
+
+# 7. individual triangles: a small "tent" of two triangles
+Shape "triA" {
+    "triangle" [ -5.2 0 1.6   -3.6 0 1.6   -4.4 1.4 1.6 ]
+    "material" "triMat"
+}
+Shape "triB" {
+    "triangle" [ -3.6 0 1.6   -3.0 0 1.6   -4.4 1.4 1.6 ]
+    "material" "triMat"
+}
+
+# ---- lights ------------------------------------------------------------
+# 4. two point lights with configurable radiant intensity
+Light "keyLight" {
+    "point" [ -3.5 5.5 5.0 ]
+    "intensity" [ 55 52 48 ]
+}
+Light "fillLight" {
+    "point" [ 4.5 3.0 3.5 ]
+    "intensity" [ 18 18 20 ]
+}

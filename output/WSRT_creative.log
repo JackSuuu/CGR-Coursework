@@ -1,0 +1,23 @@
+[INFO ] CGR26_renderer starting
+[INFO ] command line: scene='scenes/WSRT_creative.pbrt' output='output'
+[INFO ] parsing 'scenes/WSRT_creative.pbrt' (132 lines)
+[INFO ] scene starts with one default diffuse material
+[INFO ] integrator 'whitted': maxdepth=12 BF=4 spp=4 sampler=grid
+[INFO ] camera: perspective, fov=34.000000 aperture=0.000000 focus=1.000000 pos=(0.000000,2.200000,11.000000) look=(0.000000,1.400000,0.000000) fwd=(0.000000,-0.072536,-0.997366)
+[INFO ] loaded texture 'textures/tiles.ppm' (32x32)
+[INFO ] loaded texture 'textures/checker.ppm' (64x64)
+[INFO ] point light at (-5, 7, 6) I=(150, 130, 105)
+[INFO ] point light at (5.5, 3.5, 4.5) I=(45, 55, 80)
+[INFO ] parsed scene: 11 shapes, 2 lights, 9 materials, integrator='whitted'
+[INFO ] BVH: 21 nodes, 11 leaves, depth 5, built in 0.000007 s
+[INFO ] integrator: whitted
+[INFO ] WSRT: 320x220, maxDepth=12, 1 sample/pixel (no antialiasing)
+[INFO ] WSRT frame time: 0.000000 s
+[INFO ] wrote output/WSRT_creative.png (320x220)
+[INFO ] image mean=(0.170376, 0.162038, 0.171401) min=0.000849 max=1.000000
+[INFO ] BVH stats: nodes=21 leaves=11 rays=173664 primTests=297283
+[INFO ]   bvh-build         0.0000 s
+[INFO ]   render            0.0226 s
+[INFO ]   rays traced        0  (primitive tests 0)
+[INFO ] parse warnings=0 parse errors=0
+[INFO ] CGR26_renderer finished

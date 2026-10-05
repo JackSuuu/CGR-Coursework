@@ -1,0 +1,131 @@
+# WSRT_creative -- the WSRT pushed a bit further than WSRT_simple.
+#
+# Extra features on show, each of which is called out in the report:
+#   1. Fresnel-weighted mirror/dielectric mix on the water-like pool floor
+#   2. total internal reflection: the tall glass slab viewed at a grazing angle
+#   3. multiple nested mirrors (the two chrome spheres reflect each other)
+#   4. two point lights with different colours -> colour bleeding + specular tint
+#   5. a texture-mapped diffuse floor plus a texture-mapped mirror
+#   6. shadow rays through the "arch" of triangles
+#   7. deep recursion: the mirror-in-mirror path reaches maxdepth
+
+Integrator "whitted" {
+    "integer maxdepth" 12
+}
+
+Film "creative" {
+    "integer xresolution" 960
+    "integer yresolution" 600
+}
+
+Camera "cam" {
+    "lookat" 0 2.2 11.0   0 1.4 0   0 1 0
+    "float fov" 34
+}
+
+# ---- materials ---------------------------------------------------------
+Material "marble" {
+    "diffuse" "reflectance" [ 0.85 0.83 0.80 ]
+    "texture" "diffuse" "textures/tiles.ppm"
+    "float uscale" 8
+    "float vscale" 8
+}
+Material "chromeA" {
+    "mirror" "reflectance" [ 1.0 0.97 0.92 ]
+    "texture" "reflectance" "textures/checker.ppm"
+    "float uscale" 3
+    "float vscale" 2
+}
+Material "chromeB" {
+    "mirror" "reflectance" [ 0.90 0.93 1.00 ]
+}
+Material "glassSlab" {
+    "dielectric" "reflectance" [ 1 1 1 ] "float eta" 1.60
+}
+Material "rubyBall" {
+    "phong" "reflectance" [ 0.70 0.05 0.08 ] "specularreflectance" [ 1.0 0.9 0.9 ] "float phong" 90
+}
+Material "goldBall" {
+    "blinnphong" "reflectance" [ 0.85 0.65 0.20 ] "specularreflectance" [ 1 1 1 ] "float shininess" 220
+}
+Material "tealBall" {
+    "blinnphong" "reflectance" [ 0.10 0.45 0.48 ] "specularreflectance" [ 0.6 0.7 0.7 ] "float shininess" 70
+}
+Material "arch" {
+    "blinnphong" "reflectance" [ 0.55 0.55 0.60 ] "specularreflectance" [ 0.3 0.3 0.3 ] "float shininess" 25
+}
+
+# ---- geometry ----------------------------------------------------------
+# Marble floor. pbrt planes are xy with normal +z, so rotate -90 about x.
+Shape "floor" {
+    "plane" [ 0 0 0 ]
+    "rotate" 1 0 0 -90
+    "material" "marble"
+}
+
+# 1/2. Two chrome balls facing each other: each shows the other, which is what
+# makes the recursion visible. The slab between them shows TIR.
+Shape "chromeLeft" {
+    "sphere" [ 1.15 ]
+    "translate" -2.5 1.15 1.0
+    "material" "chromeA"
+}
+Shape "chromeRight" {
+    "sphere" [ 1.15 ]
+    "translate" 2.5 1.15 -1.0
+    "material" "chromeB"
+}
+
+# Tall dielectric slab, seen almost edge-on.
+Shape "slab" {
+    "triangle" [ -0.28 0 3.2   0.28 0 3.2   0.28 3.0 3.2 ]
+    "material" "glassSlab"
+}
+Shape "slabSide" {
+    "triangle" [ -0.28 0 3.2   -0.28 3.0 3.2   0.28 3.0 3.2 ]
+    "material" "glassSlab"
+}
+
+# Phong and Blinn-Phong, so the two highlights can be compared side by side.
+Shape "ruby" {
+    "sphere" [ 0.85 ]
+    "translate" -0.9 0.85 -2.4
+    "material" "rubyBall"
+}
+Shape "gold" {
+    "sphere" [ 0.85 ]
+    "translate" 0.9 0.85 -2.4
+    "material" "goldBall"
+}
+Shape "teal" {
+    "sphere" [ 0.55 ]
+    "translate" -3.6 0.55 -1.6
+    "material" "tealBall"
+}
+
+# 6. An arch of four triangles; the key light passes through the opening and
+# casts a shaped patch on the floor behind it.
+Shape "archL" {
+    "triangle" [ -4.6 0 -1.2   -4.6 2.6 -1.2   -3.9 2.6 -1.2 ]
+    "material" "arch"
+}
+Shape "archR" {
+    "triangle" [ -3.3 0 -1.2   -3.3 2.6 -1.2   -4.0 2.6 -1.2 ]
+    "material" "arch"
+}
+Shape "archTop" {
+    "triangle" [ -4.6 2.6 -1.2   -4.6 3.2 -1.2   -3.3 3.2 -1.2 ]
+    "material" "arch"
+}
+
+# ---- lights ------------------------------------------------------------
+# 4. A warm key and a cool fill. The WSRT traces one shadow ray per light, so
+# the two shadows stay hard-edged -- softening them is Module 2's antialiasing.
+Light "key" {
+    "point" [ -5.0 7.0 6.0 ]
+    "intensity" [ 150 130 105 ]
+}
+Light "fill" {
+    "point" [ 5.5 3.5 4.5 ]
+    "intensity" [ 45 55 80 ]
+}

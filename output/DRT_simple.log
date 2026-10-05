@@ -1,0 +1,23 @@
+[INFO ] CGR26_renderer starting
+[INFO ] command line: scene='scenes/DRT_simple.pbrt' output='output'
+[INFO ] parsing 'scenes/DRT_simple.pbrt' (82 lines)
+[INFO ] scene starts with one default diffuse material
+[INFO ] integrator 'distributed': maxdepth=4 BF=4 spp=16 sampler=grid
+[INFO ] camera: thin-lens perspective, fov=36.000000 aperture=0.035000 focus=7.200000 pos=(0.000000,1.900000,7.500000) look=(0.000000,1.150000,0.000000) fwd=(0.000000,-0.099504,-0.995037)
+[INFO ] loaded texture 'textures/checker.ppm' (64x64)
+[INFO ] loaded mesh 'meshes/icosphere.obj': 5120 triangles
+[INFO ] area light (rectangle) area=12.000000
+[INFO ] area light (rectangle) area=5.290000
+[INFO ] parsed scene: 5122 shapes, 2 lights, 4 materials, integrator='distributed'
+[INFO ] BVH: 10243 nodes, 5122 leaves, depth 16, built in 0.005597 s
+[INFO ] integrator: distributed
+[INFO ] DRT: 320x220, maxDepth=4 BF=4 spp=16 sampler=grid lensRadius=0.035000 focus=7.200000
+[INFO ] DRT frame time: 0.000000 s
+[INFO ] wrote output/DRT_simple.png (320x220)
+[INFO ] image mean=(0.228642, 0.230189, 0.238856) min=0.011781 max=1.000000
+[INFO ] BVH stats: nodes=10243 leaves=5122 rays=7485226 primTests=8272511
+[INFO ]   bvh-build         0.0056 s
+[INFO ]   render            0.9600 s
+[INFO ]   rays traced        0  (primitive tests 0)
+[INFO ] parse warnings=0 parse errors=0
+[INFO ] CGR26_renderer finished

@@ -1,0 +1,13 @@
+# Build artefacts
+build/
+output/CGR26_renderer
+*.o
+*.d
+
+# Images/logs produced by the student test suite are reproducible from
+# studentTests/runAllTests.sh, so only the reported images in output/ are
+# tracked.
+output/studentTests/
+
+# Editor / OS noise
+.DS_Store

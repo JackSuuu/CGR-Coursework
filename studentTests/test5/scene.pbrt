@@ -1,0 +1,31 @@
+# test5 - DRT: area light source with soft shadows.
+# A single emissive rectangle is the only light in the scene. Each shadow ray
+# is aimed at an independently sampled point on that rectangle, so the shadow
+# boundary must be penumbra-soft and must get smoother as "spp" increases.
+# run.sh renders the scene twice, at 16 and at 256 samples per pixel, and checks
+# that both images are lit (well above the black ambient level), that the two
+# means agree closely (sampling noise is not bias), and that the log reports the
+# configured sample count.
+
+Integrator "distributed" {
+  "integer maxdepth" 4
+  "integer bf" 2
+  "sampler" "grid"
+}
+Film "film" { "integer xresolution" 200 "integer yresolution" 150 }
+Camera "camera" {
+  "lookat" 0 1.8 6.0  0 1.0 0  0 1 0  "float fov" 42
+}
+
+Material "floor" { "diffuse" "reflectance" [ 0.75 0.73 0.70 ] }
+Material "ball"  { "phong" "reflectance" [ 0.55 0.58 0.68 ]
+                  "specularreflectance" [ 0.25 0.25 0.25 ] "float phongexponent" 40 }
+
+Shape "ground" { "plane" [ 0 0 0 ] "rotate" 1 0 0 -90  "material" "floor" }
+Shape "sphere" { "sphere" [ 1.0 ] "translate" 0 1.0 0  "material" "ball" }
+Shape "cube"   { "sphere" [ 0.55 ] "translate" -1.9 0.55 1.1  "material" "ball" }
+
+# Two opposite corners of the emissive panel (x/y extent taken from the
+# segment, panel built square and perpendicular to it).
+Light "softbox" { "rectangle" [ -1.6 3.4 1.8   1.6 3.4 1.8 ]  "radiance" [ 14 14 14 ] }
+Light "bounce"  { "rectangle" [ -3.2 0.35 1.6   -3.2 2.4 1.6 ]  "radiance" [ 3 3 3.2 ] }

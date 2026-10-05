@@ -1,0 +1,37 @@
+# test9 - DRT: OBJ triangle mesh with per-vertex normals and UVs.
+# pyramid.obj is a hand-written, dependency-free OBJ file: 5 vertices, 4
+# side triangles and 2 base triangles, with per-vertex normals and per-vertex
+# UVs. It is loaded by the renderer's own OBJ parser (standard library only) and
+# intersected as individual triangles.
+#
+# The mesh carries two named materials, so run.sh also checks that the parser
+# reports more than one material. Mesh UVs feed a PPM texture (checker.ppm) that
+# lives next to the scene, which is what makes a broken UV interpolation
+# visible.
+
+Integrator "distributed" {
+  "integer maxdepth" 4
+  "integer bf" 2
+  "integer spp" 48
+  "sampler" "grid"
+}
+Film "film" { "integer xresolution" 200 "integer yresolution" 150 }
+Camera "camera" { "lookat" 0 1.6 5.4  0 1.0 0  0 1 0  "float fov" 42 }
+
+Material "floor" { "diffuse" "reflectance" [ 0.72 0.70 0.68 ] }
+Material "stone" {
+  "phong"
+  "texture" "diffuse" "checker.ppm"
+  "float uscale" 2 "float vscale" 2
+  "reflectance" [ 0.65 0.65 0.65 ]
+  "specularreflectance" [ 0.18 0.18 0.18 ] "float phongexponent" 30
+}
+
+Shape "ground" { "plane" [ 0 0 0 ] "rotate" 1 0 0 -90  "material" "floor" }
+Shape "pyramid" {
+  "trianglemesh" "pyramid.obj"
+  "material" "stone"
+}
+
+Light "key" { "rectangle" [ -2.0 3.2 2.0   2.0 3.2 2.0 ]  "radiance" [ 11 11 11 ] }
+Light "rim" { "rectangle" [ -2.8 1.2 -1.8   2.8 1.2 -1.8 ]  "radiance" [ 3.5 3.5 3.6 ] }

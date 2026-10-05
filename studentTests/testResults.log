@@ -1,0 +1,116 @@
+
+---- test1 ----
+test1: chrome sphere, two point lights, shadow-ray offset
+  ok    scene parses without errors
+  ok    whitted integrator selected
+  ok    single sample per pixel (no antialiasing)
+  ok    point light intensity read from the scene file
+  ok    second point light
+  ok    mirror recursion depth
+  ok    image mean (0.112491 in [0.08, 0.20])
+  ok    lit floor and sphere are visible (0.440797 > 0.25)
+  ok    background pixels stay near the background value (0.020000 < 0.05)
+  ok    shading produces contrast (lit plus shadow) (0.103460 > 0.08)
+test1: PASS
+
+---- test2 ----
+test2: glass sphere, Fresnel split, total internal reflection
+  ok    scene parses without errors
+  ok    refractive recursion depth honoured
+  ok    image mean (0.199775 in [0.15, 0.35])
+  ok    Fresnel highlight on the glass (0.600101 > 0.35)
+  ok    no pixel is fully black (every ray still finds a path) (0.008932 > 0.001)
+  ok    refraction produces contrast (0.125532 > 0.05)
+test2: PASS
+
+---- test3 ----
+test3: checker.ppm mapped twice, sphere and plane UVs
+  ok    scene parses without errors
+  ok    both checker.ppm instances loaded (2)
+  ok    PPM header parsed
+  ok    image mean (0.081950 in [0.04, 0.15])
+  ok    specular highlight present (0.900141 > 0.5)
+  ok    checkerboard keeps dark squares (0.001050 < 0.01)
+  ok    texture adds high-frequency contrast (0.109405 > 0.09)
+test3: PASS
+
+---- test4 ----
+test4: identical scene with and without --no-bvh
+  ok    scene parses without errors
+  ok    BVH was built
+  ok    BVH run traced a useful number of rays (58304 > 1000)
+  ok    --no-bvh run skipped the acceleration structure
+  ok    no-bvh run still reports profiling
+  ok    mean channel 1 matches (0.093666 vs 0.093666 +/- 0.0005)
+  ok    mean channel 2 matches (0.092009 vs 0.092009 +/- 0.0005)
+  ok    mean channel 3 matches (0.089781 vs 0.089781 +/- 0.0005)
+  ok    minimum matches (0.020000 vs 0.020000 +/- 0.0005)
+  ok    maximum matches (0.525148 vs 0.525148 +/- 0.0005)
+  ok    standard deviation matches (0.087942 vs 0.087942 +/- 0.0005)
+  ok    both traversal orders timed and logged (BVH 0.0065s vs brute force 0.0067s)
+test4: PASS
+
+---- test5 ----
+test5: rectangle emitters, sample-count sweep, penumbra
+  ok    DRT scene parses without errors
+  ok    rectangle area lights are the emitters
+  ok    emitter has a non-zero area (6.400000 > 0.5)
+  ok    light sampling density is configurable
+  ok    high sample count run
+  ok    lit image at 16 spp (0.138175 in [0.08, 0.25])
+  ok    lit image at 256 spp (0.138441 in [0.08, 0.25])
+  ok    converged mean is stable between 16 and 256 spp (0.138441 vs 0.138175 +/- 0.02)
+test5: PASS
+
+---- test6 ----
+test6: closed aperture against a strongly defocused lens
+  ok    DRT scene parses without errors
+  ok    aperture radius taken from the scene file
+  ok    focal distance taken from the scene file
+  ok    closed aperture override
+  ok    wide aperture override
+  ok    focus override
+  ok    defocused render is lit (0.138639 in [0.08, 0.25])
+  ok    defocus raises the mean (0.004781 > 0.002)
+  ok    defocus lowers the contrast (0.144991 < 0.150268)
+test6: PASS
+
+---- test7 ----
+test7: HDR emitter compressed by Reinhard, white point sweep
+  ok    DRT scene parses without errors
+  ok    HDR emitters found
+  ok    compressed at white point 1 (0.559021 in [0.30, 0.75])
+  ok    white point 8 darkens the mid-tones (0.372323 < 0.509021)
+  ok    luminance mode differs from per-channel (0.169267 < 0.999)
+  ok    per-channel mean (0.559021 in [0.30, 0.75])
+  ok    output stays inside the display range (1.000000 < 1.0001)
+test7: PASS
+
+---- test8 ----
+test8: broken scene must be reported, never crash
+  ok    renderer exited cleanly (status 0)
+  ok    unsupported integrator reported
+  ok    unsupported material type reported
+  ok    malformed number list reported
+  ok    at least two errors logged (2)
+        [ERROR] line 26: unterminated list: expected a matching ']' or ')'
+        [ERROR] line 25: point light needs 3 numbers
+  ok    error count in the summary line (2 > 0)
+  ok    an image was still written using the parts that could be parsed
+test8: PASS
+
+---- test9 ----
+test9: hand-written OBJ pyramid, smooth shading, interpolated UVs
+  ok    DRT scene parses without errors
+  ok    OBJ mesh loaded by the built-in parser
+  ok    mesh UVs feed the texture lookup
+  ok    mesh triangles are added as shapes (7 > 6)
+  ok    image mean (0.168097 in [0.10, 0.25])
+  ok    lit mesh faces are visible (0.600333 > 0.35)
+  ok    checkerboard dark squares survive on the mesh (0.016375 < 0.05)
+  ok    textured mesh adds contrast (0.163793 > 0.10)
+test9: PASS
+
+==================== summary ====================
+passed: 9
+failed: 0
