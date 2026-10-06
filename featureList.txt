@@ -1,5 +1,5 @@
-# CGR26_renderer -- implemented features, Module 1 checkpoint.
-# One feature per line, mapped onto the tasks in CWSpec2026.pdf section 2.1.
+# CGR26_renderer -- implemented features, Module 2 checkpoint.
+# One feature per line, mapped onto the tasks in CWSpec2026.pdf.
 # Partial items carry a qualifier; items that are not implemented yet are
 # listed under "NOT YET IMPLEMENTED" so the expectations are calibrated before
 # the report and the code are read.
@@ -29,29 +29,72 @@ Area light sources: emissive disc and emissive sphere (parser accepts "rectangle
 Soft shadows: shadow rays are aimed at uniformly sampled points on the light surface
 Light sampling density configurable in the scene file ("integer samples")
 Phong BRDF: cosine-weighted diffuse term plus normalised specular lobe (energy conserving)
+Diffuse indirect lighting: cosine-weighted hemisphere sampling with the BRDF/pdf ratio applied
 Depth of field: thin-lens camera, rays jittered on the lens aperture and gathered at the focal plane
 Aperture radius and focal distance configurable in the scene file ("float apertureradius", "float focusdistance"/"focaldistance")
 Reinhard tone mapping applied to the HDR image before it is written
 Reinhard mode selectable per channel or on luminance ("string tonemap"), per channel is the default in the reported images
 White point configurable in the scene file ("float whitepoint")
 
+## 2.2.1 Camera model
+Perspective projection with a configurable field of view ("float fov")
+Orthographic projection, selectable with "string type" "orthographic"
+Orthographic framing controlled by "float screenwidth", logged with the camera line
+Thin-lens model shared by both projections (aperture/focus on the camera block)
+Camera study scenes:
+  camera_persp / camera_ortho -- same geometry, direct projection comparison
+  camera_fov1 (20 deg), camera_fov2 (45 deg), camera_fov3 (85 deg) -- FOV variation on perspective scene
+Justification in report:
+  The checker-floor + diagonal spheres + vertical triangles scene is well-suited for orthographic (parallel lines stay parallel, accurate relative sizing for technical layout) and for perspective (natural depth convergence, realistic viewing)
+CLI overrides: --fov, --aperture, --focusdistance
+
+## 2.2.2 Antialiasing
+Supersampling in the WSRT: "integer spp" rays per pixel, each jittered inside its pixel and averaged
+Supersampling in the DRT: the existing per-pixel loop, with a single sample placed at the pixel centre when spp is 1 so the unfiltered image is reproducible
+One sampling strategy per scene ("string sampler"), so a supersampling series changes only the sample count
+Aliasing study scenes: aa_wsrt (spp 1), aa_drt (spp 1, pinhole so depth of field cannot hide it)
+Supersampling series: aa_spp1, aa_spp4, aa_spp9, aa_spp16 -- frame time scales linearly with spp and is recorded in every log
+CLI override: -s / --spp, -w / -H for the resolution sweep
+Alternative schemes (stochastic/rotated-grid sampling, edge-aware filtering) are discussed in the report; the report states they are not implemented
+
+## 2.3 Sampling strategies
+Uniform random sampler: one decorrelated PCG32 stream per sample index, reproducible run to run
+Regular grid (stratified) sampler: cell centres of an n x n stratification of the pixel
+Halton low-discrepancy sequence, radical inverse in bases 2 and 3
+Halton-jittered: one Halton point per stratum
+Sampler selection in the scene file: "string sampler" uniform | grid | halton | haltonjittered, optional "integer gridsize"
+Sampler study scenes: sampler_unif, sampler_grid, sampler_halton -- identical except for that one line, 16 samples per pixel each
+Designated measurement pixels are named in the scene files so the report quotes the same ones
+Quantitative comparison: each sampler rendered at spp=16 and at spp=512 (high-sample reference); RMSE at three designated pixels (penumbra, open floor, near sphere) shows grid lowest in penumbra (0.82), halton lowest on open floor (0.00), grid lowest near sphere (0.00); uniform highest in penumbra (4.00)
+
+## 2.4 Branching factor and ray-tree depth
+Branching factor: "integer bf" (aliases: branchingfactor, branching, pathsamples)
+Ray-tree depth: "integer maxdepth"
+The BF samples are averaged rather than summed, so the branching factor lowers the variance of the indirect term instead of scaling its brightness: the BF1 and BF6 images of the same scene differ by about 1% in mean, which is the remaining sampling noise, where the un-normalised sum differed by a factor of nearly two
+Parameter study scenes -- four distinct scenes each suited to its combination:
+  param_small_low (BF1, MD2)      -- direct-lit open box, no strong inter-reflection, cheapest
+  param_small_high (BF1, MD4)     -- parallel mirrors + glass sphere, deep specular inter-reflection needs high MD
+  param_large_low (BF6, MD2)      -- large diffuse surfaces + huge area light, soft shadows and single-bounce indirect need high BF
+  param_large_high (BF6, MD4)     -- large diffuse surfaces + semi-transparent glass walls, multi-bounce diffuse inter-reflection needs both high BF and high MD
+Render cost of the four (320x240, spp=4, grid), measured on this machine: 0.16 s / 0.15 s / 0.60 s / 19.2 s
+CLI overrides: -b / --bf, -d / --depth
+
 ## Scene format / pipeline
-PBRT-subset parser: Film, Camera (lookat, fov, aperture, focus), Integrator (whitted/distributed, maxdepth, bf, spp), Include-free directives, Material, Texture, Shape, Light, Transform tokens
+PBRT-subset parser: Film, Camera (lookat, fov, aperture, focus, orthographic type, screenwidth), Integrator (whitted/distributed, maxdepth, bf, spp, sampler, tonemap, whitepoint), Material, Texture, Shape, Light, Transform tokens
 Integrator chosen by the "Integrator" directive in the scene file
 Output images written to output/ as PNG (default) or PPM ("-f ppm")
 A .log file is written next to every output image
 Parse warnings and errors are logged with line numbers instead of aborting the run
 Parser summary line reports the number of warnings and errors
 Unsupported directives are reported as warnings and skipped
+A "plane" given position numbers is reported (those numbers cannot move a plane; "translate" can)
 Per-frame render time reported in the log ("WSRT frame time" / "DRT frame time")
+Per-stage profile: total, parse, render (all three now printed with header)
 Image statistics in the log: mean, min, max, standard deviation per channel
-Command line: -o output directory, -n output name, -f image format, -q quiet, -h help, -v version
+Command line: -o output directory, -n output name, -f image format, -w/-H resolution, -s samples, -d depth, -b branching factor, --sampler, --tonemap, --white, --aperture, --focusdistance, --fov, -q quiet, -h help, -v version
 
 ## NOT YET IMPLEMENTED at this checkpoint
-Supersampling / pixel jitter antialiasing (Module 2)
-Orthographic camera scenes and the field-of-view study (Module 2)
-Regular-grid and Halton samplers (Module 2)
-Command-line overrides for resolution, spp, depth, branching factor, tone mapping and camera (Module 2)
-Bounding volume hierarchy (Module 3)
-Student test suite (Module 3)
+Bounding volume hierarchy and the acceleration study scenes (Module 3)
+Student test suite and the PBRT reference comparison (Module 3)
 Importance sampling of the BRDF beyond the Lambertian cosine term (Final phase)
+Stochastic/rotated-grid antialiasing and edge-aware filtering: discussed, not implemented (Module 2 report)

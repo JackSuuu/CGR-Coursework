@@ -30,6 +30,17 @@ void PrintUsage(const char* exe) {
            "(default: output)\n"
         << "  -n, --name <stem>     output file stem (default: the scene stem)\n"
         << "  -f, --format <fmt>    ppm | png (default: png)\n"
+        << "  -w, --width <n>       override the film x resolution\n"
+        << "  -H, --height <n>      override the film y resolution\n"
+        << "  -s, --spp <n>         override samples per pixel\n"
+        << "  -d, --depth <n>       override the maximum ray-tree depth\n"
+        << "  -b, --bf <n>          override the branching factor\n"
+        << "      --sampler <name>  uniform | grid | halton | haltonjittered\n"
+        << "      --tonemap <name>  reinhard | reinhardluminance\n"
+        << "      --white <v>       Reinhard white point\n"
+        << "      --aperture <r>    thin-lens aperture radius (0 = pinhole)\n"
+        << "      --focusdistance <d> thin-lens focal distance\n"
+        << "      --fov <deg>       override the field of view\n"
         << "  -q, --quiet           do not echo the log to stdout\n"
         << "  -v, --version         print the version and exit\n"
         << "  -h, --help            print this message and exit\n";
@@ -56,6 +67,9 @@ int main(int argc, char** argv) {
     std::string outDir = "output";
     std::string outStem;
     ImageFormat format = ImageFormat::PNG;
+    int overrideW = 0, overrideH = 0, overrideSpp = 0, overrideDepth = 0, overrideBF = 0;
+    std::string overrideSampler, overrideToneMap;
+    double overrideWhite = 0, overrideAperture = -1, overrideFocus = -1, overrideFov = -1;
     bool quiet = false;
 
     for (int i = 1; i < argc; ++i) {
@@ -90,6 +104,28 @@ int main(int argc, char** argv) {
                           << "' (expected ppm or png)\n";
                 return 2;
             }
+        } else if (a == "-w" || a == "--width") {
+            overrideW = std::atoi(needValue("--width").c_str());
+        } else if (a == "-H" || a == "--height") {
+            overrideH = std::atoi(needValue("--height").c_str());
+        } else if (a == "-s" || a == "--spp") {
+            overrideSpp = std::atoi(needValue("--spp").c_str());
+        } else if (a == "-d" || a == "--depth") {
+            overrideDepth = std::atoi(needValue("--depth").c_str());
+        } else if (a == "-b" || a == "--bf") {
+            overrideBF = std::atoi(needValue("--bf").c_str());
+        } else if (a == "--sampler") {
+            overrideSampler = needValue("--sampler");
+        } else if (a == "--tonemap") {
+            overrideToneMap = needValue("--tonemap");
+        } else if (a == "--white") {
+            overrideWhite = std::atof(needValue("--white").c_str());
+        } else if (a == "--aperture" || a == "--lensradius") {
+            overrideAperture = std::atof(needValue("--aperture").c_str());
+        } else if (a == "--focusdistance" || a == "--focus") {
+            overrideFocus = std::atof(needValue("--focusdistance").c_str());
+        } else if (a == "--fov") {
+            overrideFov = std::atof(needValue("--fov").c_str());
         } else if (a == "-q" || a == "--quiet") {
             quiet = true;
         } else if (!a.empty() && a[0] == '-') {
@@ -121,12 +157,70 @@ int main(int argc, char** argv) {
     ParseResult pr = ParseSceneFile(scenePath);
     Scene& scene = pr.scene;
 
+    // Command-line overrides win over the scene file.
+    if (overrideW > 0) scene.film.xResolution = overrideW;
+    if (overrideH > 0) scene.film.yResolution = overrideH;
+    if (overrideSpp > 0) scene.spp = overrideSpp;
+    if (overrideDepth > 0) scene.maxDepth = overrideDepth;
+    if (overrideBF > 0) scene.branchingFactor = overrideBF;
+    if (!overrideSampler.empty()) {
+        if (overrideSampler == "uniform") scene.sampler = SamplerType::Uniform;
+        else if (overrideSampler == "grid") scene.sampler = SamplerType::Grid;
+        else if (overrideSampler == "halton") scene.sampler = SamplerType::Halton;
+        else if (overrideSampler == "haltonjittered")
+            scene.sampler = SamplerType::HaltonJittered;
+        else
+            LOGW("unknown sampler '" + overrideSampler + "' on the command line; ignored");
+    }
+    if (overrideWhite > 0) scene.whitePoint = overrideWhite;
+    // Camera overrides are applied to the parameters the parser recorded, then
+    // the camera is rebuilt from its own stored setup.
+    {
+        bool camChanged = false;
+        if (overrideFov > 0) {
+            scene.camera.setupFov = Clamp(overrideFov, 1e-3, 179.0);
+            camChanged = true;
+        }
+        if (overrideAperture >= 0) {
+            scene.camera.setupAperture = overrideAperture;
+            camChanged = true;
+        }
+        if (overrideFocus > 0) {
+            scene.camera.setupFocus = overrideFocus;
+            camChanged = true;
+        }
+        // An aperture override also has to move the camera between the
+        // pinhole and the thin-lens configuration.
+        if (overrideAperture >= 0 && scene.camera.lastSetup == Camera::Setup::Perspective)
+            scene.camera.lastSetup = Camera::Setup::ThinLens;
+        if (overrideAperture >= 0 && overrideAperture == 0 &&
+            scene.camera.lastSetup == Camera::Setup::ThinLens)
+            scene.camera.lastSetup = Camera::Setup::Perspective;
+        if (camChanged) {
+            scene.camera.Reconfigure();
+            LOGI("camera override: " + scene.camera.ProjectionName() +
+                 ", fov=" + std::to_string(scene.camera.fov) + " aperture=" +
+                 std::to_string(scene.camera.lensRadius) + " focus=" +
+                 std::to_string(scene.camera.focusDistance));
+        }
+    }
+    if (!overrideToneMap.empty()) {
+        if (overrideToneMap == "reinhardluminance" || overrideToneMap == "luminance")
+            scene.perChannelToneMap = false;
+        else if (overrideToneMap == "reinhard" || overrideToneMap == "perchannel")
+            scene.perChannelToneMap = true;
+        else
+            LOGW("unknown tone mapping '" + overrideToneMap + "' on the command line; ignored");
+    }
+
     LOGI("parsed scene: " + std::to_string(scene.shapes.size()) + " shapes, " +
          std::to_string(scene.lights.size()) + " lights, " +
          std::to_string(scene.materials.size()) + " materials, integrator='" +
          scene.integrator + "'");
     if (scene.shapes.empty())
         LOGW("the scene contains no shapes; the image will show only the background");
+
+    parse.Stop();
 
     // ---- render ----------------------------------------------------------
     auto integrator = MakeIntegrator(scene.integrator);
@@ -159,8 +253,8 @@ int main(int argc, char** argv) {
         }
     double n = static_cast<double>(film.xSize) * film.ySize;
     // Per-channel standard deviation: a cheap, resolution-independent measure of
-    // how much detail the frame carries, used for the quantitative comparisons
-    // in the report.
+    // how much detail the frame carries (used by the student tests and by the
+    // Module 2 comparisons).
     double sd[3];
     for (int i = 0; i < 3; ++i) {
         double m = sum[i] / n;
@@ -171,7 +265,7 @@ int main(int argc, char** argv) {
          ", " + std::to_string(sum[2] / n) + ") min=" + std::to_string(mn) +
          " max=" + std::to_string(mx) + " stddev=(" + std::to_string(sd[0]) + ", " +
          std::to_string(sd[1]) + ", " + std::to_string(sd[2]) + ")");
-
+    total.Stop();
     Profiler::Instance().Report();
 
     LOGI("parse warnings=" + std::to_string(pr.nWarnings) +

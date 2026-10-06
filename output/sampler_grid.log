@@ -1,0 +1,19 @@
+[INFO ] CGR26_renderer starting
+[INFO ] command line: scene='/Users/jacksu/Desktop/CGR/cw/scenes/sampler_grid.pbrt' output='/Users/jacksu/Desktop/CGR/cw/output'
+[INFO ] parsing '/Users/jacksu/Desktop/CGR/cw/scenes/sampler_grid.pbrt' (58 lines)
+[INFO ] scene starts with one default diffuse material
+[INFO ] integrator 'distributed': maxdepth=3 BF=4 spp=16 sampler=grid
+[INFO ] camera: perspective, fov=38.000000 aperture=0.000000 focus=1.000000 pos=(0.000000,2.600000,6.500000) look=(0.000000,0.900000,0.000000) fwd=(0.000000,-0.253028,-0.967459)
+[INFO ] area light (rectangle) area=16.000000
+[INFO ] parsed scene: 3 shapes, 1 lights, 4 materials, integrator='distributed'
+[INFO ] integrator: distributed
+[INFO ] DRT: 320x240, maxDepth=3 BF=4 spp=16 sampler=grid lensRadius=0.000000 focus=1.000000
+[INFO ] DRT frame time: 1.410541 s
+[INFO ] wrote /Users/jacksu/Desktop/CGR/cw/output/sampler_grid.png (320x240)
+[INFO ] image mean=(0.261876, 0.253080, 0.236259) min=0.040415 max=1.000000 stddev=(0.179103, 0.174563, 0.164307)
+[INFO ] ---- profile ----
+[INFO ]   parse             0.0003 s
+[INFO ]   render            1.4105 s
+[INFO ]   total             1.4159 s
+[INFO ] parse warnings=0 parse errors=0
+[INFO ] CGR26_renderer finished

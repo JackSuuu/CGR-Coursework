@@ -1,0 +1,46 @@
+# param_large_low
+#
+# Module 2 DRT Parameter Study: Large BF (6), Low MD (2)
+# 场景设计：大面积漫反射地面/墙面 + 超大面积面光源
+# 间接光主要来自一次反射（地面→墙面），无深层反射
+# 预期：BF=6 显著降低柔和阴影和间接漫反射的噪声，MD=2 足够
+
+Integrator "distributed" {
+    "integer bf" 6
+    "integer maxdepth" 2
+    "integer spp" 4
+    "string sampler" "grid"
+}
+
+Film "paramStudy" {
+    "integer xresolution" 320
+    "integer yresolution" 240
+}
+
+Camera "cam" {
+    "lookat" 0 1.5 6.0   0 0.8 0   0 1 0
+    "float fov" 48
+}
+
+# ---- materials: 高反照率漫反射，最大化间接光贡献 ----
+Material "floorMat"  { "phong" "reflectance" [ 0.85 0.82 0.78 ] "specularreflectance" [ 0.01 0.01 0.01 ] "float phong" 5 }
+Material "ceilMat"   { "phong" "reflectance" [ 0.80 0.78 0.75 ] "specularreflectance" [ 0.01 0.01 0.01 ] "float phong" 5 }
+Material "backMat"   { "phong" "reflectance" [ 0.75 0.73 0.70 ] "specularreflectance" [ 0.01 0.01 0.01 ] "float phong" 5 }
+Material "leftMat"   { "phong" "reflectance" [ 0.20 0.65 0.25 ] "specularreflectance" [ 0.01 0.01 0.01 ] "float phong" 5 }
+Material "rightMat"  { "phong" "reflectance" [ 0.70 0.15 0.12 ] "specularreflectance" [ 0.01 0.01 0.01 ] "float phong" 5 }
+Material "objMat"    { "phong" "reflectance" [ 0.78 0.72 0.65 ] "specularreflectance" [ 0.2 0.2 0.2 ] "float phong" 30 }
+
+# ---- geometry: 大盒子，地面/墙面占满视野 ----
+Shape "floor"   { "plane" [ 0 0 0 ] "rotate" 1 0 0 -90 "material" "floorMat" }
+Shape "ceiling" { "plane" [ 0 0 0 ] "translate" 0 4.0 0 "rotate" 1 0 0 90 "material" "ceilMat" }
+Shape "back"    { "plane" [ 0 0 0 ] "translate" 0 0 -4.0 "material" "backMat" }
+Shape "left"    { "plane" [ 0 0 0 ] "translate" -3.5 0 0 "rotate" 0 1 0 90 "material" "leftMat" }
+Shape "right"   { "plane" [ 0 0 0 ] "translate" 3.5 0 0 "rotate" 0 1 0 -90 "material" "rightMat" }
+Shape "sphere1" { "sphere" [ 1.0 ] "translate" -1.2 1.0 -0.5 "material" "objMat" }
+Shape "sphere2" { "sphere" [ 0.7 ] "translate" 1.5 0.7 0.5 "material" "objMat" }
+
+# ---- lights: 超大面积面光源 (覆盖大部分天花板)，产生极柔和阴影 ----
+Light "hugeTopLight" {
+    "rectangle" [ -3.0 3.95 -3.0   3.0 3.95 -3.0   3.0 3.95 2.0   -3.0 3.95 2.0 ]
+    "radiance" [ 8 7.7 7.2 ]
+}

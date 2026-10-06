@@ -3,6 +3,7 @@
 #include <cmath>
 
 #include "core/logger.h"
+#include "core/sampler.h"
 #include "core/timer.h"
 #include "scene/light.h"
 #include "scene/material.h"
@@ -143,21 +144,35 @@ Color WhittedIntegrator::Radiance(const Scene& scene, const Ray& ray,
 Image WhittedIntegrator::Render(const Scene& scene) {
     Image film(scene.film.xResolution, scene.film.yResolution, 3);
     const int w = film.xSize, h = film.ySize;
+    const int spp = std::max(1, scene.spp);
+    Sampler sampler;
+    sampler.type = scene.sampler;
+    sampler.nSamples = spp;
+    sampler.gridN = scene.gridN;
     Logger::Instance().Info("WSRT: " + std::to_string(w) + "x" + std::to_string(h) +
                             ", maxDepth=" + std::to_string(scene.maxDepth) +
-                            ", 1 sample/pixel (no antialiasing)");
+                            ", spp=" + std::to_string(spp) +
+                            " sampler=" + SamplerTypeName(scene.sampler) +
+                            (spp == 1 ? " (single centre sample, no antialiasing)"
+                                      : " (supersampled)"));
     {
         // Scoped so the timer is destroyed (and the stage recorded) before the
         // frame time is read back for the log.
         ScopeTimer frame("render");
         for (int y = 0; y < h; ++y) {
             for (int x = 0; x < w; ++x) {
-                // Single sample at the pixel centre. The WSRT is left unfiltered
-                // on purpose: the aliasing that produces is the subject of
-                // Module 2.
-                Ray r = scene.camera.GenerateRay((x + 0.5) / w, (h - y - 0.5) / h,
-                                                Point2(0.5, 0.5));
-                Color L = Radiance(scene, r, 0, Color(1));
+                // spp == 1 keeps the single sample at the pixel centre, so the
+                // image carries the unfiltered staircase aliasing that the
+                // antialiasing task compares against. spp > 1 jitters every
+                // sample inside the pixel with the scene's sampler and averages
+                // the radiance, which is the supersampling study.
+                Color L(0, 0, 0);
+                for (int s = 0; s < spp; ++s) {
+                    Point2 j = spp == 1 ? Point2(0.5, 0.5) : sampler.Get(s);
+                    Ray r = scene.camera.GenerateRay((x + j.x) / w, (h - y - j.y) / h, j);
+                    L += Radiance(scene, r, 0, Color(1));
+                }
+                L = L / static_cast<double>(spp);
                 film.SetPixel(x, y, Clamp(L, 0.0, 1.0));
             }
         }

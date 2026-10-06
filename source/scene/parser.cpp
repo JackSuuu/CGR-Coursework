@@ -871,6 +871,16 @@ void SceneReader::ParseShape(const std::string& name, Scene* scene) {
         }
         shape = std::make_shared<Sphere>(r);
     } else if (type == "plane") {
+        // A plane is the local z = 0 plane; only the transform moves it, so
+        // position numbers in "[ ... ]" would be silently dropped and the wall
+        // would end up in the wrong place. Say so instead of ignoring them.
+        bool nonzero = false;
+        for (double v : posNums)
+            if (std::fabs(v) > 1e-9) nonzero = true;
+        if (nonzero)
+            Warn(typeTok.line,
+                 "'plane' is positioned by 'translate'/'rotate', not by its [ ... ] "
+                 "numbers; those numbers are ignored");
         shape = std::make_shared<Plane>();
     } else if (type == "triangle") {
         auto tri = std::make_shared<Triangle>();
@@ -1179,7 +1189,11 @@ void SceneReader::ParseCamera(Scene* scene) {
                                             look, up,
                                             scene->film);
     }
-    Logger::Instance().Info("camera: " + scene->camera.ProjectionName() +
+    // An orthographic camera has no field of view, so the width that actually
+    // defines its framing is the one worth quoting.
+    std::string proj = scene->camera.ProjectionName();
+    if (ortho) proj += ", screenwidth=" + std::to_string(screenW);
+    Logger::Instance().Info("camera: " + proj +
                             ", fov=" + std::to_string(fov) + " aperture=" +
                             std::to_string(scene->camera.lensRadius) + " focus=" +
                             std::to_string(scene->camera.focusDistance) + " pos=(" +
@@ -1219,7 +1233,8 @@ void SceneReader::ParseIntegrator(const std::string& name, Scene* scene) {
         }
         scene->maxDepth = iv;
     }
-    if (GetInt1(entries, "branchingfactor", &iv) || GetInt1(entries, "pathsamples", &iv)) {
+    if (GetInt1(entries, "branchingfactor", &iv) || GetInt1(entries, "branching", &iv) ||
+        GetInt1(entries, "bf", &iv) || GetInt1(entries, "pathsamples", &iv)) {
         if (iv < 1) {
             Warn(0, "branching factor must be >= 1; clamping");
             iv = 1;
@@ -1234,10 +1249,21 @@ void SceneReader::ParseIntegrator(const std::string& name, Scene* scene) {
         }
         scene->spp = iv;
     }
-    // Module 1 ships a single strategy; anything else is reported and ignored.
     std::string s = ToLower(EntryString(entries, "sampler"));
-    if (!s.empty() && s != "uniform" && s != "random")
-        Warn(0, "sampler '" + s + "' is not implemented yet; using 'uniform'");
+    if (!s.empty()) {
+        if (s == "uniform" || s == "random")
+            scene->sampler = SamplerType::Uniform;
+        else if (s == "grid" || s == "stratified" || s == "regular")
+            scene->sampler = SamplerType::Grid;
+        else if (s == "halton")
+            scene->sampler = SamplerType::Halton;
+        else if (s == "haltonjittered" || s == "jitteredhalton")
+            scene->sampler = SamplerType::HaltonJittered;
+        else
+            Warn(0, "unknown sampler '" + s + "'; using 'grid'");
+    }
+    int gn;
+    if (GetInt1(entries, "gridsize", &gn) && gn >= 1) scene->gridN = gn;
     double wp;
     if (GetNum1(entries, "whitepoint", &wp) && wp > 0) scene->whitePoint = wp;
     std::string tm = ToLower(EntryString(entries, "tonemap"));

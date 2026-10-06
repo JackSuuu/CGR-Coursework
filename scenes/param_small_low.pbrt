@@ -1,0 +1,44 @@
+# param_small_low
+#
+# Module 2 DRT Parameter Study: Small BF (1), Low MD (2)
+# 场景设计：直射光为主，无强间接反射，浅深度足够
+# 预期：BF/MD 增大对图像改善不明显，渲染最快
+
+Integrator "distributed" {
+    "integer bf" 1
+    "integer maxdepth" 2
+    "integer spp" 4
+    "string sampler" "grid"
+}
+
+Film "paramStudy" {
+    "integer xresolution" 320
+    "integer yresolution" 240
+}
+
+Camera "cam" {
+    "lookat" 0 1.2 5.5   0 0.8 0   0 1 0
+    "float fov" 50
+}
+
+# ---- materials ----
+Material "floorMat"  { "phong" "reflectance" [ 0.72 0.70 0.66 ] "specularreflectance" [ 0.03 0.03 0.03 ] "float phong" 15 }
+Material "ceilMat"   { "phong" "reflectance" [ 0.75 0.74 0.72 ] "specularreflectance" [ 0.03 0.03 0.03 ] "float phong" 15 }
+Material "backMat"   { "phong" "reflectance" [ 0.68 0.68 0.66 ] "specularreflectance" [ 0.03 0.03 0.03 ] "float phong" 15 }
+Material "leftMat"   { "phong" "reflectance" [ 0.12 0.55 0.18 ] "specularreflectance" [ 0.03 0.03 0.03 ] "float phong" 15 }
+Material "rightMat"  { "phong" "reflectance" [ 0.68 0.12 0.10 ] "specularreflectance" [ 0.03 0.03 0.03 ] "float phong" 15 }
+Material "sphereMat" { "phong" "reflectance" [ 0.80 0.75 0.65 ] "specularreflectance" [ 0.4 0.4 0.4 ] "float phong" 80 }
+
+# ---- geometry: 开放式盒子，单球体，无镜面互反射 ----
+Shape "floor"   { "plane" [ 0 0 0 ] "rotate" 1 0 0 -90 "material" "floorMat" }
+Shape "ceiling" { "plane" [ 0 0 0 ] "translate" 0 3.0 0 "rotate" 1 0 0 90 "material" "ceilMat" }
+Shape "back"    { "plane" [ 0 0 0 ] "translate" 0 0 -3.0 "material" "backMat" }
+Shape "left"    { "plane" [ 0 0 0 ] "translate" -2.8 0 0 "rotate" 0 1 0 90 "material" "leftMat" }
+Shape "right"   { "plane" [ 0 0 0 ] "translate" 2.8 0 0 "rotate" 0 1 0 -90 "material" "rightMat" }
+Shape "sphere"  { "sphere" [ 0.8 ] "translate" 0.5 0.8 -0.5 "material" "sphereMat" }
+
+# ---- lights: 大面积顶光，柔和阴影 ----
+Light "topLight" {
+    "rectangle" [ -2.2 2.95 -2.0   2.2 2.95 -2.0   2.2 2.95 1.0   -2.2 2.95 1.0 ]
+    "radiance" [ 12 11.5 10.5 ]
+}

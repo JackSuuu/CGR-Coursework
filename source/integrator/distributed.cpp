@@ -24,7 +24,7 @@ Color Background() { return Color(0.02, 0.02, 0.025); }
 }  // namespace
 
 Point2 DistributedIntegrator::NextSample(const Scene& scene, uint64_t index) const {
-    return Sample2D(index, scene.spp);
+    return Sample2D(scene.sampler, index, scene.spp, scene.gridN);
 }
 
 Color DistributedIntegrator::SampleRadiance(const Scene& scene,
@@ -169,8 +169,12 @@ Color DistributedIntegrator::SampleRadiance(const Scene& scene,
 
     // ---- indirect bounce: cosine-weighted BRDF sampling -------------------
     if (depth + 1 < scene.maxDepth) {
-        // BF rays, each with its own cosine-weighted direction.
-        for (int b = 0; b < scene.branchingFactor; ++b) {
+        // BF rays, each with its own cosine-weighted direction. Each one is an
+        // unbiased estimate of the indirect integral, so they are averaged:
+        // a larger branching factor buys a lower variance, not more light.
+        Color indirect(0, 0, 0);
+        const int bf = std::max(1, scene.branchingFactor);
+        for (int b = 0; b < bf; ++b) {
             uint64_t s = sampleIndex + static_cast<uint64_t>(b) * 104729ULL +
                          static_cast<uint64_t>(depth) * 7919ULL;
             Point2 uv = NextSample(scene, s);
@@ -185,17 +189,21 @@ Color DistributedIntegrator::SampleRadiance(const Scene& scene,
             Color f = mat->F(n, wo, wi);
             if (f.IsBlack()) continue;
 
-            // Shadow ray for the next vertex.
-            double eps = ShadowEps(Length(wi));
-            if (Occluded(scene, Ray(hit.si.p + n * eps, wi), kInf)) continue;
+            // No visibility test here: the next vertex is defined by the first
+            // intersection the recursive call finds, so the segment between the
+            // two vertices is unoccluded by construction. Testing the sampled
+            // direction against the whole scene instead would also test the
+            // surface the path is about to land on, and in an enclosed scene
+            // every direction would be rejected and the indirect term lost.
 
             // For a cosine-weighted lobe f*cos/pdf collapses to the albedo, so
             // the throughput multiplier is simply baseColor. The Phong specular
             // lobe is only used for direct lighting here; sampling it is the
             // subject of the final-phase importance-sampling work.
             Ray next(OffsetOrigin(hit.si.p, wi), wi);
-            L += SampleRadiance(scene, next, depth + 1, beta * baseColor, s);
+            indirect += SampleRadiance(scene, next, depth + 1, beta * baseColor, s);
         }
+        L += indirect / static_cast<double>(bf);
     }
 
     return L;
@@ -222,11 +230,15 @@ Image DistributedIntegrator::Render(const Scene& scene) {
                 sum = Color(0, 0, 0);
                 for (int s = 0; s < spp; ++s) {
                     // Stratify over the pixel; the same sample also drives the
-                    // lens and the light surface.
-                    Point2 lens = NextSample(scene, s);
+                    // lens and the light surface. With a single sample per pixel
+                    // the pixel position is kept at the centre so the image
+                    // shows the aliasing the supersampling study measures; the
+                    // lens keeps its own sample so depth of field survives.
+                    Point2 samp = NextSample(scene, s);
+                    Point2 px = spp > 1 ? samp : Point2(0.5, 0.5);
                     // Film rows run top-down while the screen window runs up.
-                    double sy = (h - y - lens.y) / h;
-                    Ray r = scene.camera.GenerateRay((x + lens.x) / w, sy, lens);
+                    double sy = (h - y - px.y) / h;
+                    Ray r = scene.camera.GenerateRay((x + px.x) / w, sy, samp);
                     sum += SampleRadiance(scene, r, 0, Color(1), s);
                 }
                 Color L = sum / static_cast<double>(spp);

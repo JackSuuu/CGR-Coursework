@@ -2,7 +2,7 @@
 [INFO ] command line: scene='/Users/jacksu/Desktop/CGR/cw/scenes/DRT_simple.pbrt' output='/Users/jacksu/Desktop/CGR/cw/output'
 [INFO ] parsing '/Users/jacksu/Desktop/CGR/cw/scenes/DRT_simple.pbrt' (81 lines)
 [INFO ] scene starts with one default diffuse material
-[INFO ] integrator 'distributed': maxdepth=4 BF=4 spp=8 sampler=uniform
+[INFO ] integrator 'distributed': maxdepth=4 BF=4 spp=8 sampler=grid
 [INFO ] camera: thin-lens perspective, fov=36.000000 aperture=0.035000 focus=7.200000 pos=(0.000000,1.900000,7.500000) look=(0.000000,1.150000,0.000000) fwd=(0.000000,-0.099504,-0.995037)
 [INFO ] loaded texture 'textures/checker.ppm' (64x64)
 [INFO ] loaded mesh 'meshes/icosphere.obj': 500 triangles
@@ -10,10 +10,13 @@
 [INFO ] area light (rectangle) area=5.290000
 [INFO ] parsed scene: 502 shapes, 2 lights, 4 materials, integrator='distributed'
 [INFO ] integrator: distributed
-[INFO ] DRT: 450x300, maxDepth=4 BF=4 spp=8 sampler=uniform lensRadius=0.035000 focus=7.200000
-[INFO ] DRT frame time: 49.007841 s
+[INFO ] DRT: 450x300, maxDepth=4 BF=4 spp=8 sampler=grid lensRadius=0.035000 focus=7.200000
+[INFO ] DRT frame time: 120.897812 s
 [INFO ] wrote /Users/jacksu/Desktop/CGR/cw/output/DRT_simple.png (450x300)
-[INFO ] image mean=(0.147820, 0.147151, 0.151906) min=0.001401 max=1.000000 stddev=(0.134997, 0.134768, 0.137913)
-[INFO ]   render            49.0078 s
+[INFO ] image mean=(0.148563, 0.148381, 0.152275) min=0.001048 max=1.000000 stddev=(0.136325, 0.137028, 0.141665)
+[INFO ] ---- profile ----
+[INFO ]   parse             0.0016 s
+[INFO ]   render            120.8978 s
+[INFO ]   total             120.9081 s
 [INFO ] parse warnings=0 parse errors=0
 [INFO ] CGR26_renderer finished

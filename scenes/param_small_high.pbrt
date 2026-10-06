@@ -1,0 +1,42 @@
+# param_small_high
+#
+# Module 2 DRT Parameter Study: Small BF (1), High MD (4)
+# 场景设计：两面平行镜面 + 玻璃球，产生多层镜面反射/折射
+# 预期：MD=2 只能看到 1-2 次反射，MD=4 能看到深层无限镜像
+# BF=1 足够，因为镜面反射是确定性的（无方差）
+
+Integrator "distributed" {
+    "integer bf" 1
+    "integer maxdepth" 4
+    "integer spp" 4
+    "string sampler" "grid"
+}
+
+Film "paramStudy" {
+    "integer xresolution" 320
+    "integer yresolution" 240
+}
+
+Camera "cam" {
+    "lookat" 0 1.2 4.5   0 1.0 0   0 1 0
+    "float fov" 55
+}
+
+# ---- materials ----
+Material "mirrorMat"  { "mirror" "reflectance" [ 0.95 0.95 0.96 ] }
+Material "glassMat"   { "glass" "reflectance" [ 0.98 0.98 0.99 ] "transmittance" [ 0.95 0.95 0.96 ] "float eta" 1.5 }
+Material "floorMat"   { "phong" "reflectance" [ 0.15 0.15 0.15 ] "specularreflectance" [ 0.02 0.02 0.02 ] "float phong" 10 }
+Material "backMat"    { "phong" "reflectance" [ 0.30 0.30 0.30 ] "specularreflectance" [ 0.02 0.02 0.02 ] "float phong" 10 }
+
+# ---- geometry: 两面平行镜面 (z=-2.5 和 z=2.5) + 中间玻璃球 ----
+Shape "floor" { "plane" [ 0 0 0 ] "rotate" 1 0 0 -90 "material" "floorMat" }
+Shape "mirror_back"  { "plane" [ 0 0 0 ] "translate" 0 0 -2.5 "material" "mirrorMat" }
+Shape "mirror_front" { "plane" [ 0 0 0 ] "translate" 0 0 2.5 "rotate" 0 0 1 180 "material" "mirrorMat" }
+Shape "back_wall"    { "plane" [ 0 0 0 ] "translate" 0 0 -3.5 "material" "backMat" }
+Shape "glass_sphere" { "sphere" [ 0.7 ] "translate" 0 1.0 0 "material" "glassMat" }
+
+# ---- lights: 小面积点状面光源，避免大面漫反射噪声 ----
+Light "spotLight" {
+    "rectangle" [ -0.3 2.8 -0.3   0.3 2.8 -0.3   0.3 2.8 0.3   -0.3 2.8 0.3 ]
+    "radiance" [ 50 48 45 ]
+}

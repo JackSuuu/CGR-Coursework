@@ -1,0 +1,23 @@
+[INFO ] CGR26_renderer starting
+[INFO ] command line: scene='/Users/jacksu/Desktop/CGR/cw/scenes/aa_spp9.pbrt' output='/Users/jacksu/Desktop/CGR/cw/output'
+[INFO ] parsing '/Users/jacksu/Desktop/CGR/cw/scenes/aa_spp9.pbrt' (159 lines)
+[INFO ] scene starts with one default diffuse material
+[INFO ] integrator 'whitted': maxdepth=5 BF=4 spp=9 sampler=grid
+[INFO ] camera: perspective, fov=40.000000 aperture=0.000000 focus=1.000000 pos=(0.000000,1.700000,8.000000) look=(0.000000,1.000000,0.000000) fwd=(0.000000,-0.087167,-0.996194)
+[INFO ] loaded texture 'textures/checker.ppm' (64x64)
+[INFO ] point light at (-4, 6, 5.5) I=(70, 66, 60)
+[INFO ] point light at (5, 4, 4) I=(22, 22, 26)
+[INFO ] point light at (-3, 5.5, 4) I=(80, 76, 70)
+[INFO ] point light at (4, 3.5, 5) I=(24, 24, 28)
+[INFO ] parsed scene: 30 shapes, 4 lights, 7 materials, integrator='whitted'
+[INFO ] integrator: whitted
+[INFO ] WSRT: 480x360, maxDepth=5, spp=9 sampler=grid (supersampled)
+[INFO ] WSRT frame time: 1.847941 s
+[INFO ] wrote /Users/jacksu/Desktop/CGR/cw/output/aa_spp9.png (480x360)
+[INFO ] image mean=(0.185564, 0.179705, 0.180038) min=0.000637 max=1.000000 stddev=(0.241852, 0.233861, 0.229010)
+[INFO ] ---- profile ----
+[INFO ]   parse             0.0007 s
+[INFO ]   render            1.8479 s
+[INFO ]   total             1.8607 s
+[INFO ] parse warnings=0 parse errors=0
+[INFO ] CGR26_renderer finished

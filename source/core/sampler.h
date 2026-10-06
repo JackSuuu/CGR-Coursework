@@ -1,7 +1,7 @@
 #pragma once
-// Sampling infrastructure. Module 1 only needs independent uniform samples for
-// the area-light soft shadows, so that is all this file provides; the regular
-// grid and Halton strategies arrive with the Module 2 sampler comparison.
+// Samplers. Module 1 needs stratified/uniform samples for the area-light soft
+// shadows; the Halton and regular-grid strategies are included here so the
+// Module 2 sampler comparison needs no new infrastructure.
 #include <cmath>
 #include <cstdint>
 #include <vector>
@@ -39,17 +39,40 @@ class RNG {
     std::uint64_t state = 0, inc = 0;
 };
 
-enum class SamplerType { Uniform };
+enum class SamplerType { Uniform, Grid, Halton, HaltonJittered };
 
-// Returns the index-th 2D sample of the strategy in [0,1)^2.
-Point2 Sample2D(std::uint64_t index, int nSamples, std::uint64_t scrambleSeed = 0);
+// Radical inverse in the given base, used for the Halton sequence.
+inline double RadicalInverse(int base, std::uint64_t i) {
+    double f = 1.0 / base, r = 0.0;
+    while (i > 0) {
+        std::uint64_t digit = i % static_cast<std::uint64_t>(base);
+        r += f * static_cast<double>(digit);
+        i /= static_cast<std::uint64_t>(base);
+        f /= base;
+    }
+    return r;
+}
 
-// The per-pixel sample count is fixed for a whole frame, so cache it.
+inline double Halton(int index, int base) {
+    return RadicalInverse(base, static_cast<std::uint64_t>(index) + 1);
+}
+
+// Returns the i-th 2D sample of a named strategy in [0,1)^2.
+Point2 Sample2D(SamplerType type, std::uint64_t index, int nSamples,
+                 int gridN, std::uint64_t scrambleSeed = 0);
+
+// Per-pixel sample count is often a perfect square, so cache the strategy.
 struct Sampler {
+    SamplerType type = SamplerType::Grid;
     int nSamples = 4;
-    std::uint64_t seed = 0;
+    int gridN = 2;          // only used by SamplerType::Grid
+    std::uint64_t seed = 0; // scramble seed for the Halton sequence
 
-    Point2 Get(std::uint64_t i) const { return Sample2D(i, nSamples, seed); }
+    Point2 Get(std::uint64_t i) const {
+        return Sample2D(type, i, nSamples, gridN, seed);
+    }
+    // Antialiasing: jitter within the pixel with the same strategy.
+    Point2 GetPixelJittered(std::uint64_t i) const { return Get(i); }
 };
 
 const char* SamplerTypeName(SamplerType t);

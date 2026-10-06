@@ -1,0 +1,72 @@
+# camera_fov2 -- perspective camera with a 45 degree field of view.
+#
+# Module 2 camera study: the geometry, materials and lights are byte-for-byte
+# identical in every camera_* scene, so any difference in the images comes
+# from the projection alone.
+
+Integrator "whitted" {
+    "integer maxdepth" 6
+}
+
+Film "camStudy" {
+    "integer xresolution" 480
+    "integer yresolution" 480
+}
+
+# ---- camera ----------------------------------------------------------
+# normal, the reference for the other two
+Camera "cam" {
+    "lookat" 0 2.2 9.0   0 1.2 0   0 1 0
+    "float fov" 45
+}
+
+# ---- materials ---------------------------------------------------------
+Material "floorMat" {
+    "blinnphong" "reflectance" [ 0.72 0.70 0.66 ] "specularreflectance" [ 0.08 0.08 0.08 ] "shininess" 40
+    "texture" "diffuse" "textures/checker.ppm"
+    "float uscale" 5
+    "float vscale" 5
+}
+Material "redMat"   { "blinnphong" "reflectance" [ 0.70 0.12 0.10 ] "specularreflectance" [ 0.5 0.5 0.5 ] "shininess" 60 }
+Material "greenMat" { "blinnphong" "reflectance" [ 0.15 0.55 0.22 ] "specularreflectance" [ 0.5 0.5 0.5 ] "shininess" 60 }
+Material "blueMat"  { "blinnphong" "reflectance" [ 0.14 0.30 0.68 ] "specularreflectance" [ 0.6 0.6 0.6 ] "shininess" 90 }
+Material "chrome"   { "mirror" "reflectance" [ 0.95 0.96 0.97 ] }
+Material "postMat"  { "blinnphong" "reflectance" [ 0.85 0.80 0.55 ] "specularreflectance" [ 0.3 0.3 0.3 ] "shininess" 25 }
+
+# ---- geometry ----------------------------------------------------------
+# pbrt's plane is the local z = 0 plane facing +z, so it is rotated to lie flat.
+Shape "ground" {
+    "plane" [ 0 0 0 ]
+    "rotate" 1 0 0 -90
+    "material" "floorMat"
+}
+
+# Four identical spheres on a diagonal that recedes from the camera: their
+# relative sizes in the image are what separates the projections.
+Shape "nearSphere"  { "sphere" [ 0.70 ] "translate" -2.2 0.70  3.0 "material" "redMat" }
+Shape "midSphere"   { "sphere" [ 0.70 ] "translate" -0.7 0.70  0.5 "material" "greenMat" }
+Shape "farSphere"   { "sphere" [ 0.70 ] "translate"  0.8 0.70 -2.0 "material" "blueMat" }
+Shape "deepestSph"  { "sphere" [ 0.70 ] "translate"  2.3 0.70 -4.5 "material" "redMat" }
+
+# A mirror ball, so the projected reflection pattern can be compared too.
+Shape "mirrorBall" { "sphere" [ 0.9 ] "translate"  2.4 0.9  1.8 "material" "chrome" }
+
+# Vertical triangles give hard silhouettes and a known straight line whose
+# convergence (or lack of it) is the classic perspective cue.
+Shape "triA" {
+    "triangle" [ -4.6 0 -1.0   -3.4 0 -1.0   -4.0 2.4 -1.0 ]
+    "material" "postMat"
+}
+Shape "triB" {
+    "triangle" [ -3.4 0 -1.0   -2.9 0 -1.0   -4.0 2.4 -1.0 ]
+    "material" "postMat"
+}
+Shape "triC" {
+    "triangle" [  3.6 0 -5.5    4.4 0 -5.5    4.0 1.8 -5.5 ]
+    "material" "postMat"
+}
+
+# ---- lights ------------------------------------------------------------
+Light "keyLight"  { "point" [ -4.0 6.0 5.5 ] "intensity" [ 70 66 60 ] }
+Light "fillLight" { "point" [  5.0 4.0 4.0 ] "intensity" [ 22 22 26 ] }
+

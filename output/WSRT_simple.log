@@ -2,7 +2,7 @@
 [INFO ] command line: scene='/Users/jacksu/Desktop/CGR/cw/scenes/WSRT_simple.pbrt' output='/Users/jacksu/Desktop/CGR/cw/output'
 [INFO ] parsing '/Users/jacksu/Desktop/CGR/cw/scenes/WSRT_simple.pbrt' (120 lines)
 [INFO ] scene starts with one default diffuse material
-[INFO ] integrator 'whitted': maxdepth=8 BF=4 spp=4 sampler=uniform
+[INFO ] integrator 'whitted': maxdepth=8 BF=4 spp=4 sampler=grid
 [INFO ] camera: perspective, fov=38.000000 aperture=0.000000 focus=1.000000 pos=(0.000000,1.600000,9.500000) look=(0.000000,1.000000,0.000000) fwd=(0.000000,-0.063032,-0.998011)
 [INFO ] loaded texture 'textures/checker.ppm' (64x64)
 [INFO ] loaded texture 'textures/checker.ppm' (64x64)
@@ -10,10 +10,13 @@
 [INFO ] point light at (4.5, 3, 3.5) I=(18, 18, 20)
 [INFO ] parsed scene: 8 shapes, 2 lights, 8 materials, integrator='whitted'
 [INFO ] integrator: whitted
-[INFO ] WSRT: 900x560, maxDepth=8, 1 sample/pixel (no antialiasing)
-[INFO ] WSRT frame time: 0.166764 s
+[INFO ] WSRT: 900x560, maxDepth=8, spp=4 sampler=grid (supersampled)
+[INFO ] WSRT frame time: 0.708430 s
 [INFO ] wrote /Users/jacksu/Desktop/CGR/cw/output/WSRT_simple.png (900x560)
-[INFO ] image mean=(0.076932, 0.074752, 0.075837) min=0.000449 max=1.000000 stddev=(0.113327, 0.109201, 0.106347)
-[INFO ]   render            0.1668 s
+[INFO ] image mean=(0.076954, 0.074772, 0.075861) min=0.000485 max=1.000000 stddev=(0.108687, 0.104698, 0.101862)
+[INFO ] ---- profile ----
+[INFO ]   parse             0.0010 s
+[INFO ]   render            0.7084 s
+[INFO ]   total             0.7388 s
 [INFO ] parse warnings=0 parse errors=0
 [INFO ] CGR26_renderer finished

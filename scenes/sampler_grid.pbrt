@@ -1,0 +1,57 @@
+# sampler_grid -- a regular grid of samples.
+#
+# Module 2 sampler comparison. sampler_unif / sampler_grid / sampler_halton
+# differ in one line only -- "string sampler" -- so the total number of
+# samples per pixel (16) and every other setting are the same and the only
+# variable is how those 16 samples are placed.
+#
+# Designated measurement pixels, quoted in the report:
+#   (160, 150)  inside the penumbra cast by the sphere, the noisy region
+#   ( 60, 190)  open lit floor, the low-variance control
+#   (245,  70)  lit floor next to the sphere, for the bias check
+
+Integrator "distributed" {
+    "integer maxdepth" 3
+    "integer bf" 4
+    "integer spp" 16
+    "string sampler" "grid"
+}
+
+Film "samplerStudy" {
+    "integer xresolution" 320
+    "integer yresolution" 240
+}
+
+Camera "cam" {
+    "lookat" 0 2.6 6.5   0 0.9 0   0 1 0
+    "float fov" 38
+}
+
+# ---- materials ---------------------------------------------------------
+Material "floorMat" {
+    "phong" "reflectance" [ 0.70 0.68 0.64 ] "specularreflectance" [ 0.05 0.05 0.05 ] "float phong" 20
+}
+Material "ballMat" {
+    "phong" "reflectance" [ 0.20 0.42 0.70 ] "specularreflectance" [ 0.85 0.85 0.85 ] "float phong" 120
+}
+Material "blockMat" {
+    "phong" "reflectance" [ 0.65 0.45 0.18 ] "specularreflectance" [ 0.3 0.3 0.3 ] "float phong" 40
+}
+
+# ---- geometry ----------------------------------------------------------
+Shape "ground" {
+    "plane" [ 0 0 0 ]
+    "rotate" 1 0 0 -90
+    "material" "floorMat"
+}
+# The sphere casts the soft shadow whose penumbra is measured.
+Shape "ball"   { "sphere" [ 1.05 ] "translate" -0.9 1.05 0.0 "material" "ballMat" }
+Shape "block"  { "sphere" [ 0.60 ] "translate"  2.1 0.60 1.2 "material" "blockMat" }
+
+# ---- lights ------------------------------------------------------------
+# A rectangular emitter of finite size, so the penumbra width is controlled
+# by the light geometry rather than by the sampler.
+Light "softbox" {
+    "rectangle" [ -4.0 5.5 2.5   4.0 5.5 2.5 ]
+    "radiance" [ 34 32 28 ]
+}

@@ -1,0 +1,19 @@
+[INFO ] CGR26_renderer starting
+[INFO ] command line: scene='/Users/jacksu/Desktop/CGR/cw/scenes/param_small_low.pbrt' output='/Users/jacksu/Desktop/CGR/cw/output'
+[INFO ] parsing '/Users/jacksu/Desktop/CGR/cw/scenes/param_small_low.pbrt' (44 lines)
+[INFO ] scene starts with one default diffuse material
+[INFO ] integrator 'distributed': maxdepth=2 BF=1 spp=4 sampler=grid
+[INFO ] camera: perspective, fov=50.000000 aperture=0.000000 focus=1.000000 pos=(0.000000,1.200000,5.500000) look=(0.000000,0.800000,0.000000) fwd=(0.000000,-0.072536,-0.997366)
+[INFO ] area light (rectangle) area=8.800000
+[INFO ] parsed scene: 6 shapes, 1 lights, 7 materials, integrator='distributed'
+[INFO ] integrator: distributed
+[INFO ] DRT: 320x240, maxDepth=2 BF=1 spp=4 sampler=grid lensRadius=0.000000 focus=1.000000
+[INFO ] DRT frame time: 0.156479 s
+[INFO ] wrote /Users/jacksu/Desktop/CGR/cw/output/param_small_low.png (320x240)
+[INFO ] image mean=(0.491395, 0.480983, 0.459081) min=0.045939 max=1.000000 stddev=(0.206517, 0.204317, 0.199351)
+[INFO ] ---- profile ----
+[INFO ]   parse             0.0005 s
+[INFO ]   render            0.1565 s
+[INFO ]   total             0.1624 s
+[INFO ] parse warnings=0 parse errors=0
+[INFO ] CGR26_renderer finished

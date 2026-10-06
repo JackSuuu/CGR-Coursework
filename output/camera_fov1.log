@@ -1,0 +1,21 @@
+[INFO ] CGR26_renderer starting
+[INFO ] command line: scene='/Users/jacksu/Desktop/CGR/cw/scenes/camera_fov1.pbrt' output='/Users/jacksu/Desktop/CGR/cw/output'
+[INFO ] parsing '/Users/jacksu/Desktop/CGR/cw/scenes/camera_fov1.pbrt' (73 lines)
+[INFO ] scene starts with one default diffuse material
+[INFO ] integrator 'whitted': maxdepth=6 BF=4 spp=4 sampler=grid
+[INFO ] camera: perspective, fov=20.000000 aperture=0.000000 focus=1.000000 pos=(0.000000,2.200000,9.000000) look=(0.000000,1.200000,0.000000) fwd=(0.000000,-0.110432,-0.993884)
+[INFO ] loaded texture 'textures/checker.ppm' (64x64)
+[INFO ] point light at (-4, 6, 5.5) I=(70, 66, 60)
+[INFO ] point light at (5, 4, 4) I=(22, 22, 26)
+[INFO ] parsed scene: 9 shapes, 2 lights, 7 materials, integrator='whitted'
+[INFO ] integrator: whitted
+[INFO ] WSRT: 480x480, maxDepth=6, spp=4 sampler=grid (supersampled)
+[INFO ] WSRT frame time: 0.307628 s
+[INFO ] wrote /Users/jacksu/Desktop/CGR/cw/output/camera_fov1.png (480x480)
+[INFO ] image mean=(0.075596, 0.073201, 0.073093) min=0.000637 max=0.932259 stddev=(0.097525, 0.093324, 0.090101)
+[INFO ] ---- profile ----
+[INFO ]   parse             0.0007 s
+[INFO ]   render            0.3076 s
+[INFO ]   total             0.3224 s
+[INFO ] parse warnings=0 parse errors=0
+[INFO ] CGR26_renderer finished

@@ -17,12 +17,14 @@ class ScopeTimer {
   public:
     explicit ScopeTimer(const std::string& stage);
     ~ScopeTimer();
+    void Stop();
     double Elapsed() const { return ElapsedSeconds(start, end); }
 
   private:
     std::string stage;
     Clock::time_point start;
     Clock::time_point end;
+    bool stopped = false;
 };
 
 class Profiler {

@@ -15,6 +15,11 @@ ScopeTimer::ScopeTimer(const std::string& s) : stage(s), start(Clock::now()) {
     end = start;
 }
 ScopeTimer::~ScopeTimer() {
+    if (!stopped) Stop();
+}
+void ScopeTimer::Stop() {
+    if (stopped) return;
+    stopped = true;
     end = Clock::now();
     Profiler::Instance().Add(stage, Elapsed());
 }
@@ -40,6 +45,7 @@ void Profiler::Reset() {
 void Profiler::Report() {
     std::ostringstream os;
     os << "---- profile ----\n";
+    Logger::Instance().Write(LogLevel::Info, "---- profile ----");
     for (const auto& kv : stages) {
         std::ostringstream l;
         l << "  " << std::left << std::setw(18) << kv.first << std::fixed

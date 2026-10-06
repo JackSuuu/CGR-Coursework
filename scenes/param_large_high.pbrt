@@ -1,0 +1,46 @@
+# param_large_high
+#
+# Module 2 DRT Parameter Study: Large BF (6), High MD (4)
+# 场景设计：大面积漫反射表面 + 两面半透明镜面玻璃墙，产生多层漫反射互照
+# 预期：BF=6 降低每层漫反射噪声，MD=4 捕获 3-4 次漫反射互照带来的颜色渗透
+
+Integrator "distributed" {
+    "integer bf" 6
+    "integer maxdepth" 4
+    "integer spp" 4
+    "string sampler" "grid"
+}
+
+Film "paramStudy" {
+    "integer xresolution" 320
+    "integer yresolution" 240
+}
+
+Camera "cam" {
+    "lookat" 0 1.4 5.0   0 0.9 -0.3   0 1 0
+    "float fov" 52
+}
+
+# ---- materials ----
+Material "floorMat"  { "phong" "reflectance" [ 0.80 0.77 0.72 ] "specularreflectance" [ 0.01 0.01 0.01 ] "float phong" 5 }
+Material "ceilMat"   { "phong" "reflectance" [ 0.75 0.73 0.70 ] "specularreflectance" [ 0.01 0.01 0.01 ] "float phong" 5 }
+Material "backMat"   { "phong" "reflectance" [ 0.70 0.68 0.65 ] "specularreflectance" [ 0.01 0.01 0.01 ] "float phong" 5 }
+# 半透明玻璃墙：既透射又反射，产生多层漫反射互照
+Material "glassWallL" { "glass" "reflectance" [ 0.30 0.60 0.30 ] "transmittance" [ 0.60 0.65 0.60 ] "float eta" 1.4 }
+Material "glassWallR" { "glass" "reflectance" [ 0.60 0.25 0.22 ] "transmittance" [ 0.65 0.60 0.60 ] "float eta" 1.4 }
+Material "objMat"     { "phong" "reflectance" [ 0.75 0.68 0.60 ] "specularreflectance" [ 0.15 0.15 0.15 ] "float phong" 25 }
+
+# ---- geometry: 盒子 + 两侧半透明玻璃墙 (替代纯漫反射墙) ----
+Shape "floor"   { "plane" [ 0 0 0 ] "rotate" 1 0 0 -90 "material" "floorMat" }
+Shape "ceiling" { "plane" [ 0 0 0 ] "translate" 0 3.5 0 "rotate" 1 0 0 90 "material" "ceilMat" }
+Shape "back"    { "plane" [ 0 0 0 ] "translate" 0 0 -3.5 "material" "backMat" }
+Shape "left"    { "plane" [ 0 0 0 ] "translate" -3.0 0 0 "rotate" 0 1 0 90 "material" "glassWallL" }
+Shape "right"   { "plane" [ 0 0 0 ] "translate" 3.0 0 0 "rotate" 0 1 0 -90 "material" "glassWallR" }
+Shape "sphere1" { "sphere" [ 0.9 ] "translate" -1.0 0.9 -1.0 "material" "objMat" }
+Shape "sphere2" { "sphere" [ 0.6 ] "translate" 1.3 0.6 0.8 "material" "objMat" }
+
+# ---- lights: 中等面积顶光 ----
+Light "topLight" {
+    "rectangle" [ -1.8 3.4 -1.8   1.8 3.4 -1.8   1.8 3.4 1.0   -1.8 3.4 1.0 ]
+    "radiance" [ 14 13.5 12.5 ]
+}
