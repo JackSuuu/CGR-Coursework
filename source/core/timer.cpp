@@ -35,7 +35,6 @@ double Profiler::Get(const std::string& stage) const {
 
 void Profiler::Reset() {
     stages.clear();
-    raysTested = trisTested = 0;
 }
 
 void Profiler::Report() {
@@ -48,11 +47,6 @@ void Profiler::Report() {
         os << l.str() << "\n";
         Logger::Instance().Write(LogLevel::Info, l.str());
     }
-    std::ostringstream c;
-    c << "  rays traced        " << std::fixed << std::setprecision(0) << raysTested
-      << "  (primitive tests " << std::fixed << std::setprecision(0) << trisTested << ")";
-    os << c.str();
-    Logger::Instance().Write(LogLevel::Info, c.str());
 }
 
 }  // namespace cgr

@@ -13,13 +13,12 @@
 Integrator "distributed" {
     "integer maxdepth" 6
     "integer bf" 4
-    "integer spp" 64
-    "string sampler" "haltonjittered"
+    "integer spp" 8
 }
 
 Film "drtCreative" {
-    "integer xresolution" 960
-    "integer yresolution" 640
+    "integer xresolution" 360
+    "integer yresolution" 240
 }
 
 Camera "cam" {

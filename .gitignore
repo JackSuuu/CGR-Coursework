@@ -11,3 +11,7 @@ output/studentTests/
 
 # Editor / OS noise
 .DS_Store
+
+# test suite outputs (regenerate with studentTests/runAllTests.sh)
+studentTests/**/*.log
+studentTests/**/*.png

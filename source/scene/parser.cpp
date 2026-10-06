@@ -1234,21 +1234,10 @@ void SceneReader::ParseIntegrator(const std::string& name, Scene* scene) {
         }
         scene->spp = iv;
     }
+    // Module 1 ships a single strategy; anything else is reported and ignored.
     std::string s = ToLower(EntryString(entries, "sampler"));
-    if (!s.empty()) {
-        if (s == "uniform" || s == "random")
-            scene->sampler = SamplerType::Uniform;
-        else if (s == "grid" || s == "stratified" || s == "regular")
-            scene->sampler = SamplerType::Grid;
-        else if (s == "halton")
-            scene->sampler = SamplerType::Halton;
-        else if (s == "haltonjittered" || s == "jitteredhalton")
-            scene->sampler = SamplerType::HaltonJittered;
-        else
-            Warn(0, "unknown sampler '" + s + "'; using 'grid'");
-    }
-    int gn;
-    if (GetInt1(entries, "gridsize", &gn) && gn >= 1) scene->gridN = gn;
+    if (!s.empty() && s != "uniform" && s != "random")
+        Warn(0, "sampler '" + s + "' is not implemented yet; using 'uniform'");
     double wp;
     if (GetNum1(entries, "whitepoint", &wp) && wp > 0) scene->whitePoint = wp;
     std::string tm = ToLower(EntryString(entries, "tonemap"));

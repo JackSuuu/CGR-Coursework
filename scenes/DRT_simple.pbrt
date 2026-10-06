@@ -14,13 +14,12 @@
 Integrator "distributed" {
     "integer maxdepth" 4      # MD: maximum ray-tree depth
     "integer bf" 4            # rays generated per scattering event
-    "integer spp" 16          # pixel filter samples per pixel
-    "string sampler" "grid"
+    "integer spp" 8          # pixel filter samples per pixel
 }
 
 Film "drtSimple" {
-    "integer xresolution" 900
-    "integer yresolution" 600
+    "integer xresolution" 450
+    "integer yresolution" 300
 }
 
 # The aperture is non-zero, so this is a thin-lens camera focused on the mesh.

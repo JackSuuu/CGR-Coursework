@@ -32,17 +32,10 @@ class Profiler {
     void Report();
     void Reset();
     double Get(const std::string& stage) const;
-    // Intersection-test counters, used for the acceleration-structure analysis.
-    void AddRayCount(double rays) { raysTested += rays; }
-    void AddTriCount(double tris) { trisTested += tris; }
-    void ResetCounters() { raysTested = trisTested = 0; }
-    double RaysTested() const { return raysTested; }
-    double TrisTested() const { return trisTested; }
 
   private:
     Profiler() = default;
     std::map<std::string, double> stages;
-    double raysTested = 0, trisTested = 0;
 };
 
 }  // namespace cgr

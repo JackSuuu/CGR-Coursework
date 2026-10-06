@@ -1,0 +1,57 @@
+# CGR26_renderer -- implemented features, Module 1 checkpoint.
+# One feature per line, mapped onto the tasks in CWSpec2026.pdf section 2.1.
+# Partial items carry a qualifier; items that are not implemented yet are
+# listed under "NOT YET IMPLEMENTED" so the expectations are calibrated before
+# the report and the code are read.
+
+## 2.1.1 Whitted-style ray tracer (WSRT)
+Specular reflection: ideal mirror, recursive up to max ray-tree depth
+Specular refraction: dielectric, Snell's law + Fresnel, total internal reflection handled
+Blinn-Phong shading: ambient + diffuse + specular evaluated per intersection
+Blinn-Phong parameters configurable per material: diffuse colour, specular colour, shininess exponent
+Point light sources: position and radiant intensity configurable in the scene file ("intensity" and "radiantintensity" accepted)
+Shadow rays: one per intersection point per light, closest-hit test with a self-intersection ray offset
+Textures: 8-bit PPM (P3/P6) loaded with the standard library only
+Textures on spheres: equirectangular UV mapping
+Textures on planes: planar UV mapping, texture scale/offset configurable
+Geometry: plane
+Geometry: sphere
+Geometry: individual triangle
+Geometry: textured UV coordinate generation for all three primitives
+
+## 2.1.2 Distributed ray tracer (DRT)
+Triangle meshes: .obj loader (v/vt/f), built with the standard library only
+Mesh per-vertex normals: read from OBJ vn records, or recomputed as the area-weighted average of the adjacent face normals when the file has none
+Mesh UV coordinates: interpolated per pixel from the OBJ vt indices (v/vt/vn triples and negative indices supported)
+Textures on mesh surfaces: interpolated UV lookup (checker.ppm)
+Area light sources: emissive rectangle (12-number four-corner and 6-number two-corner forms)
+Area light sources: emissive disc and emissive sphere (parser accepts "rectangle", "disk", "sphere")
+Soft shadows: shadow rays are aimed at uniformly sampled points on the light surface
+Light sampling density configurable in the scene file ("integer samples")
+Phong BRDF: cosine-weighted diffuse term plus normalised specular lobe (energy conserving)
+Depth of field: thin-lens camera, rays jittered on the lens aperture and gathered at the focal plane
+Aperture radius and focal distance configurable in the scene file ("float apertureradius", "float focusdistance"/"focaldistance")
+Reinhard tone mapping applied to the HDR image before it is written
+Reinhard mode selectable per channel or on luminance ("string tonemap"), per channel is the default in the reported images
+White point configurable in the scene file ("float whitepoint")
+
+## Scene format / pipeline
+PBRT-subset parser: Film, Camera (lookat, fov, aperture, focus), Integrator (whitted/distributed, maxdepth, bf, spp), Include-free directives, Material, Texture, Shape, Light, Transform tokens
+Integrator chosen by the "Integrator" directive in the scene file
+Output images written to output/ as PNG (default) or PPM ("-f ppm")
+A .log file is written next to every output image
+Parse warnings and errors are logged with line numbers instead of aborting the run
+Parser summary line reports the number of warnings and errors
+Unsupported directives are reported as warnings and skipped
+Per-frame render time reported in the log ("WSRT frame time" / "DRT frame time")
+Image statistics in the log: mean, min, max, standard deviation per channel
+Command line: -o output directory, -n output name, -f image format, -q quiet, -h help, -v version
+
+## NOT YET IMPLEMENTED at this checkpoint
+Supersampling / pixel jitter antialiasing (Module 2)
+Orthographic camera scenes and the field-of-view study (Module 2)
+Regular-grid and Halton samplers (Module 2)
+Command-line overrides for resolution, spp, depth, branching factor, tone mapping and camera (Module 2)
+Bounding volume hierarchy (Module 3)
+Student test suite (Module 3)
+Importance sampling of the BRDF beyond the Lambertian cosine term (Final phase)

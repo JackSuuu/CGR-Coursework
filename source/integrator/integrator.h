@@ -1,10 +1,10 @@
 #pragma once
 // Common integrator interface plus the scene-wide intersection helper that both
-// integrators use (BVH-accelerated when available, brute force otherwise).
+// integrators use. Module 1 intersects every primitive directly; the
+// acceleration structure is introduced in Module 3.
 #include <memory>
 #include <string>
 
-#include "accel/bvh.h"
 #include "core/color.h"
 #include "core/image.h"
 #include "core/vec.h"
@@ -18,18 +18,17 @@ struct Hit {
     SurfaceInteraction si;
 };
 
-// Finds the closest intersection along the ray. `bvh` may be null.
-bool IntersectScene(const Scene& scene, const BVH* bvh, const Ray& r, double tMax,
-                    Hit* hit);
+// Finds the closest intersection along the ray.
+bool IntersectScene(const Scene& scene, const Ray& r, double tMax, Hit* hit);
 // Any-hit query for shadow rays.
-bool Occluded(const Scene& scene, const BVH* bvh, const Ray& r, double tMax);
+bool Occluded(const Scene& scene, const Ray& r, double tMax);
 
 class Integrator {
   public:
     virtual ~Integrator() = default;
     // Renders `scene` into `film`. Must be callable repeatedly; the WSRT is
     // deterministic, the DRT consumes its own sample indices.
-    virtual Image Render(const Scene& scene, const BVH* bvh) = 0;
+    virtual Image Render(const Scene& scene) = 0;
     virtual std::string Name() const = 0;
 };
 
