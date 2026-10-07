@@ -27,13 +27,13 @@ Point2 DistributedIntegrator::NextSample(const Scene& scene, uint64_t index) con
     return Sample2D(scene.sampler, index, scene.spp, scene.gridN);
 }
 
-Color DistributedIntegrator::SampleRadiance(const Scene& scene,
-                                            const Ray& ray, int depth, Color beta,
-                                            uint64_t sampleIndex) const {
+Color DistributedIntegrator::SampleRadiance(const Scene& scene, const BVH* bvh,
+                                             const Ray& ray, int depth, Color beta,
+                                             uint64_t sampleIndex) const {
     if (depth >= scene.maxDepth) return Color(0);
 
     Hit hit;
-    if (!IntersectScene(scene, ray, kInf, &hit)) return Background() * beta;
+    if (!IntersectScene(scene, bvh, ray, kInf, &hit)) return Background() * beta;
 
     const Material* mat = hit.si.material;
     if (!mat) return Color(0);
@@ -88,7 +88,8 @@ Color DistributedIntegrator::SampleRadiance(const Scene& scene,
             }
         }
         if (weight > 0)
-            L += SampleRadiance(scene, next, depth + 1, beta * mat->reflectance * weight,
+            L += SampleRadiance(scene, bvh, next, depth + 1,
+                                beta * mat->reflectance * weight,
                                 sampleIndex + depth * 7919ULL);
         if (!mat->emission.IsBlack()) L += mat->emission * beta;
         return L;
@@ -126,7 +127,7 @@ Color DistributedIntegrator::SampleRadiance(const Scene& scene,
             // Shadow ray (offset to avoid self-shadowing).
             double eps = ShadowEps(dist);
             Ray shadow(hit.si.p + n * eps, wi);
-            if (Occluded(scene, shadow, dist - 2 * eps)) continue;
+            if (Occluded(scene, bvh, shadow, dist - 2 * eps)) continue;
 
             // Convert the area density to a solid-angle one.
             double area = al->Area();
@@ -157,7 +158,7 @@ Color DistributedIntegrator::SampleRadiance(const Scene& scene,
             double cosSurface = Dot(ln2, wi);
             if (cosSurface <= 0) continue;
             double eps = ShadowEps(dist);
-            if (Occluded(scene, Ray(hit.si.p + n * eps, wi), dist - 2 * eps))
+            if (Occluded(scene, bvh, Ray(hit.si.p + n * eps, wi), dist - 2 * eps))
                 continue;
             Color irradiance = pl->intensity / dist2;
             Color f = mat->F(n, wo, wi);
@@ -201,7 +202,7 @@ Color DistributedIntegrator::SampleRadiance(const Scene& scene,
             // lobe is only used for direct lighting here; sampling it is the
             // subject of the final-phase importance-sampling work.
             Ray next(OffsetOrigin(hit.si.p, wi), wi);
-            indirect += SampleRadiance(scene, next, depth + 1, beta * baseColor, s);
+            indirect += SampleRadiance(scene, bvh, next, depth + 1, beta * baseColor, s);
         }
         L += indirect / static_cast<double>(bf);
     }
@@ -209,7 +210,7 @@ Color DistributedIntegrator::SampleRadiance(const Scene& scene,
     return L;
 }
 
-Image DistributedIntegrator::Render(const Scene& scene) {
+Image DistributedIntegrator::Render(const Scene& scene, const BVH* bvh) {
     Image film(scene.film.xResolution, scene.film.yResolution, 3);
     const int w = film.xSize, h = film.ySize;
     const int spp = std::max(1, scene.spp);
@@ -239,7 +240,7 @@ Image DistributedIntegrator::Render(const Scene& scene) {
                     // Film rows run top-down while the screen window runs up.
                     double sy = (h - y - px.y) / h;
                     Ray r = scene.camera.GenerateRay((x + px.x) / w, sy, samp);
-                    sum += SampleRadiance(scene, r, 0, Color(1), s);
+                    sum += SampleRadiance(scene, bvh, r, 0, Color(1), s);
                 }
                 Color L = sum / static_cast<double>(spp);
                 // Reinhard tone mapping (per channel) applied here on the HDR

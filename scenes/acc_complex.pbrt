@@ -1,0 +1,67 @@
+# acc_complex
+#
+# Module 3 acceleration study: a COMPLEX scene with mixed characteristics.
+# Design: mesh + many primitives + area lights, realistic geometry.
+# Expected: BVH provides solid speedup; good test of construction quality.
+
+Integrator "distributed" {
+    "integer maxdepth" 3
+    "integer bf" 2
+    "integer spp" 4
+    "string sampler" "grid"
+}
+
+Film "accStudy" {
+    "integer xresolution" 320
+    "integer yresolution" 240
+}
+
+Camera "cam" {
+    "lookat" 0 1.8 6.0   0 1.2 0   0 1 0
+    "float fov" 48
+}
+
+# ---- materials ----
+Material "floorMat"  { "phong" "reflectance" [ 0.72 0.70 0.66 ] "specularreflectance" [ 0.05 0.05 0.05 ] "float phong" 20
+    "texture" "diffuse" "textures/checker.ppm" "float uscale" 8 "float vscale" 8 }
+Material "wallMat"   { "phong" "reflectance" [ 0.70 0.68 0.64 ] "specularreflectance" [ 0.05 0.05 0.05 ] "float phong" 20 }
+Material "objMat"    { "phong" "reflectance" [ 0.75 0.70 0.65 ] "specularreflectance" [ 0.4 0.4 0.4 ] "float phong" 60 }
+Material "sphereMat" { "phong" "reflectance" [ 0.20 0.55 0.80 ] "specularreflectance" [ 0.6 0.6 0.6 ] "float phong" 100 }
+
+# ---- geometry: mesh (icosphere) + 20 small spheres + box walls ----
+Shape "floor"   { "plane" [ 0 0 0 ] "rotate" 1 0 0 -90 "material" "floorMat" }
+Shape "ceiling" { "plane" [ 0 0 0 ] "translate" 0 3.5 0 "rotate" 1 0 0 90 "material" "wallMat" }
+Shape "back"    { "plane" [ 0 0 0 ] "translate" 0 0 -3.5 "material" "wallMat" }
+Shape "left"    { "plane" [ 0 0 0 ] "translate" -3.0 0 0 "rotate" 0 1 0 90 "material" "wallMat" }
+Shape "right"   { "plane" [ 0 0 0 ] "translate" 3.0 0 0 "rotate" 0 1 0 -90 "material" "wallMat" }
+
+# Icosphere mesh (from genIcosphere.py)
+Shape "icosphere" { "mesh" "meshes/icosphere.obj" "material" "objMat" "translate" 0 1.2 0 }
+
+# 20 small spheres in a ring
+Shape "r00" { "sphere" [ 0.25 ] "translate"  2.5 0.25  0.0 "material" "sphereMat" }
+Shape "r01" { "sphere" [ 0.25 ] "translate"  2.3 0.25  1.0 "material" "sphereMat" }
+Shape "r02" { "sphere" [ 0.25 ] "translate"  1.8 0.25  1.7 "material" "sphereMat" }
+Shape "r03" { "sphere" [ 0.25 ] "translate"  1.0 0.25  2.3 "material" "sphereMat" }
+Shape "r04" { "sphere" [ 0.25 ] "translate"  0.0 0.25  2.5 "material" "sphereMat" }
+Shape "r05" { "sphere" [ 0.25 ] "translate" -1.0 0.25  2.3 "material" "sphereMat" }
+Shape "r06" { "sphere" [ 0.25 ] "translate" -1.8 0.25  1.7 "material" "sphereMat" }
+Shape "r07" { "sphere" [ 0.25 ] "translate" -2.3 0.25  1.0 "material" "sphereMat" }
+Shape "r08" { "sphere" [ 0.25 ] "translate" -2.5 0.25  0.0 "material" "sphereMat" }
+Shape "r09" { "sphere" [ 0.25 ] "translate" -2.3 0.25 -1.0 "material" "sphereMat" }
+Shape "r10" { "sphere" [ 0.25 ] "translate" -1.8 0.25 -1.7 "material" "sphereMat" }
+Shape "r11" { "sphere" [ 0.25 ] "translate" -1.0 0.25 -2.3 "material" "sphereMat" }
+Shape "r12" { "sphere" [ 0.25 ] "translate"  0.0 0.25 -2.5 "material" "sphereMat" }
+Shape "r13" { "sphere" [ 0.25 ] "translate"  1.0 0.25 -2.3 "material" "sphereMat" }
+Shape "r14" { "sphere" [ 0.25 ] "translate"  1.8 0.25 -1.7 "material" "sphereMat" }
+Shape "r15" { "sphere" [ 0.25 ] "translate"  2.3 0.25 -1.0 "material" "sphereMat" }
+Shape "r16" { "sphere" [ 0.25 ] "translate"  1.5 0.25  0.0 "material" "sphereMat" }
+Shape "r17" { "sphere" [ 0.25 ] "translate"  0.5 0.25  1.0 "material" "sphereMat" }
+Shape "r18" { "sphere" [ 0.25 ] "translate" -0.5 0.25  1.0 "material" "sphereMat" }
+Shape "r19" { "sphere" [ 0.25 ] "translate" -1.0 0.25  0.5 "material" "sphereMat" }
+
+# ---- lights: area light for soft shadows ----
+Light "topLight" {
+    "rectangle" [ -2.0 3.4 -2.0   2.0 3.4 -2.0   2.0 3.4 2.0   -2.0 3.4 2.0 ]
+    "radiance" [ 12 11.5 10.5 ]
+}

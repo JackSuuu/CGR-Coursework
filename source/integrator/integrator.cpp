@@ -5,11 +5,14 @@
 
 namespace cgr {
 
-bool IntersectScene(const Scene& scene, const Ray& r, double tMax, Hit* hit) {
+bool IntersectScene(const Scene& scene, const BVH* bvh, const Ray& r, double tMax,
+                    Hit* hit) {
     double t = tMax;
     int idx = -1;
-    // Module 1: linear scan over every primitive, keeping the closest hit.
-    {
+    if (bvh && !bvh->NumNodes()) bvh = nullptr;
+    if (bvh) {
+        if (!bvh->Intersect(r, tMax, &t, &idx)) return false;
+    } else {
         for (size_t i = 0; i < scene.shapes.size(); ++i) {
             double th;
             if (scene.shapes[i]->IntersectRay(r, t, &th) && th < t) {
@@ -30,7 +33,9 @@ bool IntersectScene(const Scene& scene, const Ray& r, double tMax, Hit* hit) {
     return true;
 }
 
-bool Occluded(const Scene& scene, const Ray& r, double tMax) {
+bool Occluded(const Scene& scene, const BVH* bvh, const Ray& r, double tMax) {
+    if (bvh && !bvh->NumNodes()) bvh = nullptr;
+    if (bvh) return bvh->IntersectAny(r, tMax);
     for (const auto& s : scene.shapes) {
         double th;
         if (s->IntersectRay(r, tMax, &th)) return true;

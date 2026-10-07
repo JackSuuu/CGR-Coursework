@@ -1,0 +1,45 @@
+# acc_worst
+#
+# Module 3 acceleration study: a scene POORLY SUITED for BVH acceleration.
+# Design: few large overlapping primitives, shallow tree, high overlap.
+# Expected: BVH overhead may not pay off; brute force competitive.
+
+Integrator "distributed" {
+    "integer maxdepth" 2
+    "integer bf" 1
+    "integer spp" 4
+    "string sampler" "grid"
+}
+
+Film "accStudy" {
+    "integer xresolution" 320
+    "integer yresolution" 240
+}
+
+Camera "cam" {
+    "lookat" 0 1.5 5.0   0 1.0 0   0 1 0
+    "float fov" 50
+}
+
+# ---- materials ----
+Material "wallMat"  { "phong" "reflectance" [ 0.70 0.68 0.64 ] "specularreflectance" [ 0.03 0.03 0.03 ] "float phong" 10 }
+Material "sphereMat" { "phong" "reflectance" [ 0.75 0.70 0.65 ] "specularreflectance" [ 0.3 0.3 0.3 ] "float phong" 50 }
+
+# ---- geometry: 5 huge overlapping spheres covering the whole view ----
+# All primitives span nearly the same bounding volume → BVH tree has high overlap,
+# traversal visits many nodes, little culling benefit.
+Shape "floor"   { "plane" [ 0 0 0 ] "rotate" 1 0 0 -90 "material" "wallMat" }
+Shape "back"    { "plane" [ 0 0 0 ] "translate" 0 0 -4.0 "material" "wallMat" }
+Shape "left"    { "plane" [ 0 0 0 ] "translate" -4.0 0 0 "rotate" 0 1 0 90 "material" "wallMat" }
+Shape "right"   { "plane" [ 0 0 0 ] "translate" 4.0 0 0 "rotate" 0 1 0 -90 "material" "wallMat" }
+Shape "ceil"    { "plane" [ 0 0 0 ] "translate" 0 4.0 0 "rotate" 1 0 0 90 "material" "wallMat" }
+
+# 5 huge spheres all centered near origin, radii ~3.5, heavily overlapping
+Shape "big1" { "sphere" [ 3.5 ] "translate"  0.0 0.5 0.0 "material" "sphereMat" }
+Shape "big2" { "sphere" [ 3.2 ] "translate"  0.3 0.5 -0.2 "material" "sphereMat" }
+Shape "big3" { "sphere" [ 3.0 ] "translate" -0.2 0.5 0.3 "material" "sphereMat" }
+Shape "big4" { "sphere" [ 2.8 ] "translate"  0.1 0.5 -0.4 "material" "sphereMat" }
+Shape "big5" { "sphere" [ 2.5 ] "translate" -0.3 0.5 0.1 "material" "sphereMat" }
+
+# ---- lights ----
+Light "keyLight"  { "point" [ -3.0 4.0 3.0 ] "intensity" [ 100 95 90 ] }

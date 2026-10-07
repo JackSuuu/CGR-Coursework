@@ -1,0 +1,32 @@
+# test6 - DRT: thin-lens defocus blur and depth of field.
+# The same scene is rendered twice: once with the aperture closed
+# ("float aperture" 0, a pinhole) and once with an open aperture focused on the
+# front sphere. run.sh checks that the defocused render has a visibly different
+# mean (blur redistributes energy) and that the log reports the configured lens
+# radius and focus distance. The rear sphere must be blurrier than the focused
+# one, which is visible as a softer edge in the output image.
+
+Integrator "distributed" {
+  "integer maxdepth" 4
+  "integer bf" 2
+  "integer spp" 64
+  "sampler" "grid"
+}
+Film "film" { "integer xresolution" 200 "integer yresolution" 150 }
+Camera "camera" {
+  "lookat" 0 1.5 6.5  0 1.1 -0.6  0 1 0  "float fov" 40
+  "float aperture" 0.12
+  "float focaldistance" 6.2
+}
+
+Material "floor" { "diffuse" "reflectance" [ 0.70 0.70 0.72 ] }
+Material "front" { "phong" "reflectance" [ 0.70 0.30 0.22 ]
+                   "specularreflectance" [ 0.30 0.30 0.30 ] "float phongexponent" 60 }
+Material "rear"  { "phong" "reflectance" [ 0.25 0.55 0.35 ]
+                   "specularreflectance" [ 0.30 0.30 0.30 ] "float phongexponent" 60 }
+
+Shape "ground" { "plane" [ 0 0 0 ] "rotate" 1 0 0 -90  "material" "floor" }
+Shape "near" { "sphere" [ 0.85 ] "translate" -1.1 0.85 1.2  "material" "front" }
+Shape "far"  { "sphere" [ 0.85 ] "translate" 1.4 0.85 -2.6  "material" "rear" }
+
+Light "key" { "rectangle" [ -2.4 3.6 2.0   2.4 3.6 2.0 ]  "radiance" [ 12 12 12 ] }

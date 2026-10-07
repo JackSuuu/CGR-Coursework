@@ -22,10 +22,10 @@ namespace cgr {
 
 class WhittedIntegrator : public Integrator {
   public:
-    Image Render(const Scene& scene) override;
+    Image Render(const Scene& scene, const BVH* bvh) override;
     std::string Name() const override { return "whitted"; }
 
-    Color Radiance(const Scene& scene, const Ray& ray, int depth,
+    Color Radiance(const Scene& scene, const BVH* bvh, const Ray& ray, int depth,
                    Color throughput) const;
 
   private:

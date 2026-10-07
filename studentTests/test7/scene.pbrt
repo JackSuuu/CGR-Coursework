@@ -1,0 +1,26 @@
+# test7 - DRT: Reinhard tone mapping and its white point.
+# The scene is HDR by construction: a very bright emissive panel is in frame,
+# so the raw radiance would clip to white in an 8-bit image. run.sh renders the
+# same geometry twice, with "float whitepoint" 1 and with whitepoint 8, and
+# checks that (a) the image is not a flat clipped frame, (b) raising the white
+# point makes the image brighter, and (c) the log records both runs without
+# errors. Tone mapping is applied per channel, which is documented in README.
+
+Integrator "distributed" {
+  "integer maxdepth" 3
+  "integer bf" 1
+  "integer spp" 32
+  "sampler" "grid"
+}
+Film "film" { "integer xresolution" 200 "integer yresolution" 150 }
+Camera "camera" { "lookat" 0 1.4 6.0  0 1.1 0  0 1 0  "float fov" 42 }
+
+Material "floor"  { "diffuse" "reflectance" [ 0.80 0.80 0.80 ] }
+Material "panel"  { "diffuse" "reflectance" [ 0.90 0.90 0.90 ] }
+
+Shape "ground" { "plane" [ 0 0 0 ] "rotate" 1 0 0 -90  "material" "floor" }
+Shape "wall"   { "plane" [ 0 0 -3.5 ] "material" "panel" }
+
+# Radiance far above 1.0 so Reinhard has something to compress.
+Light "emitter" { "rectangle" [ -2.0 2.6 1.5   2.0 2.6 1.5 ]  "radiance" [ 40 38 36 ] }
+Light "fill"    { "rectangle" [ -2.6 0.5 2.4   2.6 0.5 2.4 ]  "radiance" [ 2.5 2.5 2.6 ] }

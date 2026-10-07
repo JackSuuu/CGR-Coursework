@@ -34,10 +34,17 @@ class Profiler {
     void Report();
     void Reset();
     double Get(const std::string& stage) const;
+    // Acceleration structure counters.
+    void AddRayCount(uint64_t n) { rayCount += n; }
+    void AddTriCount(uint64_t n) { triCount += n; }
+    uint64_t RayCount() const { return rayCount; }
+    uint64_t TriCount() const { return triCount; }
 
   private:
     Profiler() = default;
     std::map<std::string, double> stages;
+    uint64_t rayCount = 0;
+    uint64_t triCount = 0;
 };
 
 }  // namespace cgr

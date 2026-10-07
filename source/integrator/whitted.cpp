@@ -44,13 +44,13 @@ Color Background() { return Color(0.02, 0.02, 0.025); }
 
 }  // namespace
 
-Color WhittedIntegrator::Radiance(const Scene& scene, const Ray& ray,
+Color WhittedIntegrator::Radiance(const Scene& scene, const BVH* bvh, const Ray& ray,
                                   int depth, Color throughput) const {
     // Path termination: at the deepest level only the throughput survives.
     if (depth >= scene.maxDepth) return throughput;
 
     Hit hit;
-    if (!IntersectScene(scene, ray, kInf, &hit)) return Background() * throughput;
+    if (!IntersectScene(scene, bvh, ray, kInf, &hit)) return Background() * throughput;
 
     const Material* mat = hit.si.material;
     if (!mat) return Background() * throughput;
@@ -75,7 +75,7 @@ Color WhittedIntegrator::Radiance(const Scene& scene, const Ray& ray,
             // acting as the spectral tint.
             Vec3 d = Reflect(ray.d, ng);
             Color t = throughput * mat->reflectance;
-            L += Radiance(scene, Ray(OffsetOrigin(hit.si.p, d), d), depth + 1, t);
+            L += Radiance(scene, bvh, Ray(OffsetOrigin(hit.si.p, d), d), depth + 1, t);
         } else {
             // Dielectric. Determine which side the ray arrives from so eta is
             // always >= 1 in the Fresnel call.
@@ -86,7 +86,7 @@ Color WhittedIntegrator::Radiance(const Scene& scene, const Ray& ray,
 
             if (R > 0) {
                 Vec3 d = Reflect(ray.d, ng);
-                L += Radiance(scene, Ray(OffsetOrigin(hit.si.p, d), d), depth + 1,
+                L += Radiance(scene, bvh, Ray(OffsetOrigin(hit.si.p, d), d), depth + 1,
                               throughput * mat->reflectance * R);
             }
             if (T > 0) {
@@ -96,7 +96,7 @@ Color WhittedIntegrator::Radiance(const Scene& scene, const Ray& ray,
                 Refraction rf = Refract(ray, ng, ei, et);
                 // Radiance is scaled by (eta_t/eta_i)^2 across a refraction.
                 double s = rf.etaFactor * rf.etaFactor;
-                L += Radiance(scene, rf.ray, depth + 1,
+                L += Radiance(scene, bvh, rf.ray, depth + 1,
                               throughput * mat->reflectance * T * s);
             }
         }
@@ -125,7 +125,7 @@ Color WhittedIntegrator::Radiance(const Scene& scene, const Ray& ray,
         // far end of the segment from re-hitting the light-side geometry.
         double eps = ShadowEps(dist);
         Ray shadowRay(hit.si.p + n * eps, wi);
-        if (Occluded(scene, shadowRay, dist - 2 * eps)) continue;
+        if (Occluded(scene, bvh, shadowRay, dist - 2 * eps)) continue;
 
         // Radiant intensity (W/sr) -> irradiance (W/m^2): I / r^2.
         Color irradiance = pl->intensity / dist2;
@@ -141,7 +141,7 @@ Color WhittedIntegrator::Radiance(const Scene& scene, const Ray& ray,
     return L * throughput;
 }
 
-Image WhittedIntegrator::Render(const Scene& scene) {
+Image WhittedIntegrator::Render(const Scene& scene, const BVH* bvh) {
     Image film(scene.film.xResolution, scene.film.yResolution, 3);
     const int w = film.xSize, h = film.ySize;
     const int spp = std::max(1, scene.spp);
@@ -170,7 +170,7 @@ Image WhittedIntegrator::Render(const Scene& scene) {
                 for (int s = 0; s < spp; ++s) {
                     Point2 j = spp == 1 ? Point2(0.5, 0.5) : sampler.Get(s);
                     Ray r = scene.camera.GenerateRay((x + j.x) / w, (h - y - j.y) / h, j);
-                    L += Radiance(scene, r, 0, Color(1));
+                    L += Radiance(scene, bvh, r, 0, Color(1));
                 }
                 L = L / static_cast<double>(spp);
                 film.SetPixel(x, y, Clamp(L, 0.0, 1.0));

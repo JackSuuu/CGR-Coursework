@@ -1,0 +1,77 @@
+# acc_best
+#
+# Module 3 acceleration study: a scene WELL SUITED for BVH acceleration.
+# Design: many primitives, deep hierarchy, good spatial partitioning.
+# Expected: BVH gives large speedup over brute force.
+
+Integrator "distributed" {
+    "integer maxdepth" 3
+    "integer bf" 2
+    "integer spp" 4
+    "string sampler" "grid"
+}
+
+Film "accStudy" {
+    "integer xresolution" 320
+    "integer yresolution" 240
+}
+
+Camera "cam" {
+    "lookat" 0 2.5 8.0   0 1.5 0   0 1 0
+    "float fov" 45
+}
+
+# ---- materials ----
+Material "floorMat"  { "phong" "reflectance" [ 0.70 0.68 0.64 ] "specularreflectance" [ 0.03 0.03 0.03 ] "float phong" 10 }
+Material "sphereMat" { "phong" "reflectance" [ 0.75 0.70 0.65 ] "specularreflectance" [ 0.3 0.3 0.3 ] "float phong" 50 }
+
+# ---- geometry: 50 small spheres in a 3D grid (well-separated, deep tree) ----
+# This creates many primitives with good spatial coherence for BVH.
+Shape "floor"   { "plane" [ 0 0 0 ] "rotate" 1 0 0 -90 "material" "floorMat" }
+
+# 50 spheres in a 5x5x2 grid
+Shape "s00"  { "sphere" [ 0.2 ] "translate" -2.0 0.2 -2.0 "material" "sphereMat" }
+Shape "s01"  { "sphere" [ 0.2 ] "translate" -1.0 0.2 -2.0 "material" "sphereMat" }
+Shape "s02"  { "sphere" [ 0.2 ] "translate"  0.0 0.2 -2.0 "material" "sphereMat" }
+Shape "s03"  { "sphere" [ 0.2 ] "translate"  1.0 0.2 -2.0 "material" "sphereMat" }
+Shape "s04"  { "sphere" [ 0.2 ] "translate"  2.0 0.2 -2.0 "material" "sphereMat" }
+Shape "s10"  { "sphere" [ 0.2 ] "translate" -2.0 0.2 -1.0 "material" "sphereMat" }
+Shape "s11"  { "sphere" [ 0.2 ] "translate" -1.0 0.2 -1.0 "material" "sphereMat" }
+Shape "s12"  { "sphere" [ 0.2 ] "translate"  0.0 0.2 -1.0 "material" "sphereMat" }
+Shape "s13"  { "sphere" [ 0.2 ] "translate"  1.0 0.2 -1.0 "material" "sphereMat" }
+Shape "s14"  { "sphere" [ 0.2 ] "translate"  2.0 0.2 -1.0 "material" "sphereMat" }
+Shape "s20"  { "sphere" [ 0.2 ] "translate" -2.0 0.2  0.0 "material" "sphereMat" }
+Shape "s21"  { "sphere" [ 0.2 ] "translate" -1.0 0.2  0.0 "material" "sphereMat" }
+Shape "s22"  { "sphere" [ 0.2 ] "translate"  0.0 0.2  0.0 "material" "sphereMat" }
+Shape "s23"  { "sphere" [ 0.2 ] "translate"  1.0 0.2  0.0 "material" "sphereMat" }
+Shape "s24"  { "sphere" [ 0.2 ] "translate"  2.0 0.2  0.0 "material" "sphereMat" }
+Shape "s30"  { "sphere" [ 0.2 ] "translate" -2.0 0.2  1.0 "material" "sphereMat" }
+Shape "s31"  { "sphere" [ 0.2 ] "translate" -1.0 0.2  1.0 "material" "sphereMat" }
+Shape "s32"  { "sphere" [ 0.2 ] "translate"  0.0 0.2  1.0 "material" "sphereMat" }
+Shape "s33"  { "sphere" [ 0.2 ] "translate"  1.0 0.2  1.0 "material" "sphereMat" }
+Shape "s34"  { "sphere" [ 0.2 ] "translate"  2.0 0.2  1.0 "material" "sphereMat" }
+Shape "s40"  { "sphere" [ 0.2 ] "translate" -2.0 0.2  2.0 "material" "sphereMat" }
+Shape "s41"  { "sphere" [ 0.2 ] "translate" -1.0 0.2  2.0 "material" "sphereMat" }
+Shape "s42"  { "sphere" [ 0.2 ] "translate"  0.0 0.2  2.0 "material" "sphereMat" }
+Shape "s43"  { "sphere" [ 0.2 ] "translate"  1.0 0.2  2.0 "material" "sphereMat" }
+Shape "s44"  { "sphere" [ 0.2 ] "translate"  2.0 0.2  2.0 "material" "sphereMat" }
+# Second layer
+Shape "t00"  { "sphere" [ 0.15 ] "translate" -2.0 0.6 -2.0 "material" "sphereMat" }
+Shape "t01"  { "sphere" [ 0.15 ] "translate" -1.0 0.6 -2.0 "material" "sphereMat" }
+Shape "t02"  { "sphere" [ 0.15 ] "translate"  0.0 0.6 -2.0 "material" "sphereMat" }
+Shape "t03"  { "sphere" [ 0.15 ] "translate"  1.0 0.6 -2.0 "material" "sphereMat" }
+Shape "t04"  { "sphere" [ 0.15 ] "translate"  2.0 0.6 -2.0 "material" "sphereMat" }
+Shape "t10"  { "sphere" [ 0.15 ] "translate" -2.0 0.6 -1.0 "material" "sphereMat" }
+Shape "t11"  { "sphere" [ 0.15 ] "translate" -1.0 0.6 -1.0 "material" "sphereMat" }
+Shape "t12"  { "sphere" [ 0.15 ] "translate"  0.0 0.6 -1.0 "material" "sphereMat" }
+Shape "t13"  { "sphere" [ 0.15 ] "translate"  1.0 0.6 -1.0 "material" "sphereMat" }
+Shape "t14"  { "sphere" [ 0.15 ] "translate"  2.0 0.6 -1.0 "material" "sphereMat" }
+Shape "t20"  { "sphere" [ 0.15 ] "translate" -2.0 0.6  0.0 "material" "sphereMat" }
+Shape "t21"  { "sphere" [ 0.15 ] "translate" -1.0 0.6  0.0 "material" "sphereMat" }
+Shape "t22"  { "sphere" [ 0.15 ] "translate"  0.0 0.6  0.0 "material" "sphereMat" }
+Shape "t23"  { "sphere" [ 0.15 ] "translate"  1.0 0.6  0.0 "material" "sphereMat" }
+Shape "t24"  { "sphere" [ 0.15 ] "translate"  2.0 0.6  2.0 "material" "sphereMat" }
+
+# ---- lights ----
+Light "keyLight"  { "point" [ -4.0 5.0 4.0 ] "intensity" [ 80 75 70 ] }
+Light "fillLight" { "point" [  4.0 4.0 4.0 ] "intensity" [ 25 25 30 ] }

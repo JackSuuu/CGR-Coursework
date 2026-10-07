@@ -31,7 +31,7 @@ struct Scene {
     // DRT parameters; overridable from the scene file.
     int maxDepth = 3;         // MD: maximum ray-tree depth
     int branchingFactor = 4;  // BF: rays per scattering event
-    int spp = 4;               // antialiasing / light samples per pixel
+    int spp = 1;               // antialiasing / light samples per pixel
     SamplerType sampler = SamplerType::Grid;
     int gridN = 2;
     // Tone mapping.

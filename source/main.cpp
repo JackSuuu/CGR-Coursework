@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 
+#include "accel/bvh.h"
 #include "core/image.h"
 #include "core/logger.h"
 #include "core/timer.h"
@@ -36,6 +37,7 @@ void PrintUsage(const char* exe) {
         << "  -d, --depth <n>       override the maximum ray-tree depth\n"
         << "  -b, --bf <n>          override the branching factor\n"
         << "      --sampler <name>  uniform | grid | halton | haltonjittered\n"
+        << "      --no-bvh          disable the BVH (brute-force timing runs)\n"
         << "      --tonemap <name>  reinhard | reinhardluminance\n"
         << "      --white <v>       Reinhard white point\n"
         << "      --aperture <r>    thin-lens aperture radius (0 = pinhole)\n"
@@ -68,6 +70,7 @@ int main(int argc, char** argv) {
     std::string outStem;
     ImageFormat format = ImageFormat::PNG;
     int overrideW = 0, overrideH = 0, overrideSpp = 0, overrideDepth = 0, overrideBF = 0;
+    bool forceNoBvh = false;
     std::string overrideSampler, overrideToneMap;
     double overrideWhite = 0, overrideAperture = -1, overrideFocus = -1, overrideFov = -1;
     bool quiet = false;
@@ -126,6 +129,8 @@ int main(int argc, char** argv) {
             overrideFocus = std::atof(needValue("--focusdistance").c_str());
         } else if (a == "--fov") {
             overrideFov = std::atof(needValue("--fov").c_str());
+        } else if (a == "--no-bvh") {
+            forceNoBvh = true;
         } else if (a == "-q" || a == "--quiet") {
             quiet = true;
         } else if (!a.empty() && a[0] == '-') {
@@ -222,10 +227,20 @@ int main(int argc, char** argv) {
 
     parse.Stop();
 
+    // ---- acceleration ----------------------------------------------------
+    BVH bvh;
+    bool useBvh = !forceNoBvh && BVH::Enabled();
+    if (useBvh) {
+        bvh.Build(scene.shapes);
+    } else {
+        LOGI("acceleration disabled: brute-force intersection over " +
+             std::to_string(scene.shapes.size()) + " primitives");
+    }
+
     // ---- render ----------------------------------------------------------
     auto integrator = MakeIntegrator(scene.integrator);
     LOGI("integrator: " + integrator->Name());
-    Image film = integrator->Render(scene);
+    Image film = integrator->Render(scene, useBvh ? &bvh : nullptr);
 
     // ---- write -----------------------------------------------------------
     const char* ext = (format == ImageFormat::PNG) ? "png" : "ppm";
@@ -265,6 +280,17 @@ int main(int argc, char** argv) {
          ", " + std::to_string(sum[2] / n) + ") min=" + std::to_string(mn) +
          " max=" + std::to_string(mx) + " stddev=(" + std::to_string(sd[0]) + ", " +
          std::to_string(sd[1]) + ", " + std::to_string(sd[2]) + ")");
+
+    if (useBvh)
+        LOGI("BVH stats: nodes=" + std::to_string(bvh.NumNodes()) + " leaves=" +
+             std::to_string(bvh.NumLeaves()) + " rays=" + std::to_string(bvh.RayCount()) +
+             " primTests=" + std::to_string(bvh.PrimTestCount()));
+    // The acceleration structure keeps its own counters; fold them into the
+    // profile so the timing report lists the same numbers.
+    if (useBvh) {
+        Profiler::Instance().AddRayCount(bvh.RayCount());
+        Profiler::Instance().AddTriCount(bvh.PrimTestCount());
+    }
     total.Stop();
     Profiler::Instance().Report();
 

@@ -18,12 +18,12 @@ namespace cgr {
 
 class DistributedIntegrator : public Integrator {
   public:
-    Image Render(const Scene& scene) override;
+    Image Render(const Scene& scene, const BVH* bvh) override;
     std::string Name() const override { return "distributed"; }
 
     // Accumulates one camera sample. `sampleIndex` drives both the pixel jitter
     // and the light-surface sample, so results are reproducible.
-    Color SampleRadiance(const Scene& scene, const Ray& ray, int depth,
+    Color SampleRadiance(const Scene& scene, const BVH* bvh, const Ray& ray, int depth,
                          Color beta, uint64_t sampleIndex) const;
 
   private:
