@@ -1,21 +1,26 @@
 [INFO ] CGR26_renderer starting
-[INFO ] command line: scene='/Users/jacksu/Desktop/CGR/cw/scenes/DRT_creative.pbrt' output='/Users/jacksu/Desktop/CGR/cw/output'
-[INFO ] parsing '/Users/jacksu/Desktop/CGR/cw/scenes/DRT_creative.pbrt' (112 lines)
+[INFO ] command line: scene='scenes/DRT_creative.pbrt' output='output'
+[INFO ] parsing 'scenes/DRT_creative.pbrt' (122 lines)
 [INFO ] scene starts with one default diffuse material
-[INFO ] integrator 'distributed': maxdepth=6 BF=4 spp=8 sampler=uniform
-[INFO ] camera: thin-lens perspective, fov=40.000000 aperture=0.100000 focus=10.500000 pos=(0.000000,1.600000,8.500000) look=(0.000000,1.300000,-1.500000) fwd=(0.000000,-0.029987,-0.999550)
-[INFO ] loaded texture 'textures/checker.ppm' (64x64)
-[INFO ] loaded mesh 'meshes/icosphere.obj': 500 triangles
-[INFO ] loaded mesh 'meshes/icosphere.obj': 500 triangles
-[INFO ] area light (rectangle) area=8.800000
-[INFO ] area light (rectangle) area=2.000000
-[INFO ] area light (rectangle) area=6.760000
-[INFO ] parsed scene: 1004 shapes, 3 lights, 6 materials, integrator='distributed'
+[INFO ] integrator 'distributed': maxdepth=4 BF=4 spp=24 sampler=uniform
+[INFO ] camera: thin-lens perspective, fov=50.000000 aperture=0.180000 focus=13.500000 pos=(0.000000,2.000000,10.500000) look=(0.000000,1.200000,-1.000000) fwd=(0.000000,-0.069398,-0.997589)
+[INFO ] loaded texture 'textures/wood.ppm' (64x64)
+[INFO ] loaded texture 'textures/broad_checker.ppm' (32x32)
+[INFO ] loaded texture 'textures/paper.ppm' (32x32)
+[INFO ] loaded mesh 'meshes/display_box.obj': 12 triangles
+[INFO ] loaded mesh 'meshes/display_box.obj': 12 triangles
+[INFO ] loaded mesh 'meshes/display_box.obj': 12 triangles
+[INFO ] loaded mesh 'meshes/uv_geodesic.obj': 320 triangles
+[INFO ] loaded mesh 'meshes/uv_geodesic.obj': 320 triangles
+[INFO ] area light (rectangle) area=15.840000
+[INFO ] area light (rectangle) area=1.000000
+[INFO ] area light (rectangle) area=5.200000
+[INFO ] parsed scene: 682 shapes, 3 lights, 10 materials, integrator='distributed'
 [INFO ] integrator: distributed
-[INFO ] DRT: 360x240, maxDepth=6 BF=4 spp=8 sampler=uniform lensRadius=0.100000 focus=10.500000
-[INFO ] DRT frame time: 50.501675 s
-[INFO ] wrote /Users/jacksu/Desktop/CGR/cw/output/DRT_creative.png (360x240)
-[INFO ] image mean=(0.199673, 0.198632, 0.202436) min=0.012629 max=0.945799 stddev=(0.237157, 0.235211, 0.231325)
-[INFO ]   render            50.5017 s
+[INFO ] DRT: 480x320, maxDepth=4 BF=4 spp=24 sampler=uniform lensRadius=0.180000 focus=13.500000
+[INFO ] DRT frame time: 82.613686 s
+[INFO ] wrote output/DRT_creative.png (480x320)
+[INFO ] image mean=(0.147684, 0.125122, 0.112675) min=0.000000 max=1.000000 stddev=(0.212984, 0.207278, 0.212640)
+[INFO ]   render            82.6137 s
 [INFO ] parse warnings=0 parse errors=0
 [INFO ] CGR26_renderer finished

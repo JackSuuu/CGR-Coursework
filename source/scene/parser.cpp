@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
+#include <tuple>
 
 #include "core/timer.h"
 #include "scene/mesh.h"
@@ -73,7 +74,7 @@ std::vector<double> NumbersFromTokens(const std::vector<std::string>& toks) {
 
 // Object-to-world transform for a rectangle emitter. AreaLight samples its
 // local frame as x,y in [-1,1] at z = 0 emitting towards +z, so the two edge
-// vectors have to be scaled by half and the third row has to be the unit
+    // vectors have to be scaled by half and the third column has to be the unit
 // normal (keeping the matrix non-singular so GetInverse() works).
 Transform RectTransform(Point3 p00, Point3 p10, Point3 p01) {
     Vec3 ex = p10 - p00;
@@ -86,9 +87,9 @@ Transform RectTransform(Point3 p00, Point3 p10, Point3 p01) {
     // p10 = p00 + ex and p01 = p00 + ey by construction, so the centre of the
     // unit square's image is the midpoint of those two edges' far corners.
     Point3 c = p00 + (ex + ey) * 0.5;
-    double m[4][4] = {{exd.x, exd.y, exd.z, c.x},
-                      {eyd.x, eyd.y, eyd.z, c.y},
-                      {nd.x, nd.y, nd.z, c.z},
+    double m[4][4] = {{exd.x, eyd.x, nd.x, c.x},
+                      {exd.y, eyd.y, nd.y, c.y},
+                      {exd.z, eyd.z, nd.z, c.z},
                       {0, 0, 0, 1}};
     return Transform::FromMatrix(m);
 }
@@ -227,7 +228,10 @@ struct Entry {
 class SceneReader {
   public:
     SceneReader(std::vector<Token> toks, std::string baseDir)
-        : baseDir_(std::move(baseDir)), t_(std::move(toks)) {}
+        : baseDir_(std::move(baseDir)), t_(std::move(toks)) {
+        standardSyntax_ = std::none_of(t_.begin(), t_.end(),
+                                      [](const Token& t) { return t.text == "{"; });
+    }
 
     bool Parse(Scene* scene);
 
@@ -272,17 +276,20 @@ class SceneReader {
     Transform ReadTransform();
     // One bare transform operation, e.g. "translate" -1 0 2.
     Transform ReadTransformOp();
+    Transform EntryTransforms(const std::vector<Entry>& entries);
     const Token& PeekAhead(int n) const {
         size_t q = p_ + n;
         return t_[q < t_.size() ? q : t_.size() - 1];
     }
 
     void ParseCamera(Scene* scene);
+    bool ParseStandard(Scene* scene);
     void ParseIntegrator(const std::string& name, Scene* scene);
     void ParseFilm(Scene* scene);
     void ParseShape(const std::string& name, Scene* scene);
     void ParseLight(const std::string& dir, const std::string& type, Scene* scene);
-    void ParseMaterial(const std::string& name, Scene* scene);
+    void ParseMaterial(const std::string& name, Scene* scene,
+                       const std::string& declaredType = "");
     void ParseTriangleMesh(const std::string& name, const std::vector<Entry>& entries,
                            const Transform& xf, Scene* scene);
     Material* ResolveMaterial(Scene* scene, const std::string& name);
@@ -293,6 +300,10 @@ class SceneReader {
     size_t p_ = 0;
     std::map<std::string, MaterialPtr> namedMaterials_;
     std::map<std::string, std::vector<ShapePtr>> namedShapes_;
+    bool standardSyntax_ = false;
+    Point3 standardEye_ = Point3(0, 0, 1), standardLook_ = Point3(0);
+    Vec3 standardUp_ = Vec3(0, 1, 0);
+    std::map<std::string, TexturePtr> namedTextures_;
 };
 
 std::vector<std::string> SceneReader::ReadGroup() {
@@ -377,6 +388,10 @@ std::vector<Entry> SceneReader::ReadEntries() {
     for (;;) {
         SkipSeparators();
         if (Eof() || Cur().text == "}") break;
+        // Standard PBRT has no braces: an unquoted identifier starts the next
+        // directive. Parameter names are quoted and lists may span lines.
+        if (standardSyntax_ && !IsQuoted(Cur().text) &&
+            IsIdentStart(Cur().text[0])) break;
         if (Cur().text == "{") {  // a nested block we do not interpret
             SkipBlock();
             continue;
@@ -391,7 +406,8 @@ std::vector<Entry> SceneReader::ReadEntries() {
         std::vector<std::string> words;
         std::string w;
         while (keyStream >> w) words.push_back(w);
-        if (words.size() > 1 && IsTypeToken(words[0])) pendingType = ToLower(words[0]);
+        if (words.size() > 1 && (IsTypeToken(words[0]) || words[0] == "texture"))
+            pendingType = ToLower(words[0]);
         std::string key = words.empty() ? raw : words.back();
 
         // A bare, valueless word such as "diffuse" usually names the type of the
@@ -593,6 +609,29 @@ std::string EntryString(const std::vector<Entry>& es, const char* key) {
 
 }  // namespace
 
+Transform SceneReader::EntryTransforms(const std::vector<Entry>& entries) {
+    Transform xf;
+    for (const auto& e : entries) {
+        if (!IsTransformOp(e.key)) continue;
+        std::vector<double> v;
+        if (!EntryNumbers(e, &v)) {
+            Error(e.line, "malformed transform '" + e.key + "'");
+            continue;
+        }
+        if (e.key == "translate" && v.size() == 3)
+            xf = xf * Transform::Translate(Vec3(v[0], v[1], v[2]));
+        else if (e.key == "scale" && v.size() == 3)
+            xf = xf * Transform::Scale(v[0], v[1], v[2]);
+        else if (e.key == "scale" && v.size() == 1)
+            xf = xf * Transform::Scale(v[0]);
+        else if (e.key == "rotate" && v.size() == 4)
+            xf = xf * Transform::Rotate(Vec3(v[0], v[1], v[2]), v[3]);
+        else
+            Error(e.line, "unsupported or malformed transform '" + e.key + "'");
+    }
+    return xf;
+}
+
 Material* SceneReader::ResolveMaterial(Scene* scene, const std::string& name) {
     if (name.empty()) {
         if (!scene->materials.empty()) return scene->materials.front().get();
@@ -662,46 +701,47 @@ void SceneReader::ApplyTexture(Material* m, const std::vector<Entry>& entries) {
     if (GetCol(entries, "texmod", &mod)) m->textureModulate = mod;
 }
 
-void SceneReader::ParseMaterial(const std::string& name, Scene* scene) {
-    std::vector<Entry> entries = ReadEntries();
-    // pbrt-v3 puts the material type as a valueless first token:
-    //   Material "m" { "diffuse" "reflectance" [ .8 .8 .8 ] }
-    // pbrt-v3 puts the material type as the first token of the block, with no
-    // value of its own:  Material "m" { "phong" "reflectance" [ ... ] }. The
-    // tokenizer attaches the following parameter name to that first token, so
-    // the type is recognised by the first key *not* being a known parameter.
-    // That also lets an unknown type reach the warning below instead of being
-    // silently treated as diffuse.
+void SceneReader::ParseMaterial(const std::string& name, Scene* scene,
+                               const std::string& declaredType) {
+    // Consume the valueless material type separately so ReadEntries cannot
+    // swallow the first parameter name as that type's value.
     static const char* kMaterialParams[] = {
         "reflectance",   "diffusecolor", "kd",         "basecolor",  "specularreflectance",
         "ks",            "specularcolor", "emission",  "ambient",    "shininess",
         "phongexponent", "exponent",     "eta",        "roughness",  "texmod",
         "texture",       "string",       "float",      "integer",    "bool",
         "rgb",           "spectrum",     "blackbody",  "backoff",    "intensity"};
-    std::string type = "diffuse";
-    if (!entries.empty()) {
+    std::string type = declaredType.empty() ? "diffuse" : ToLower(declaredType);
+    SkipSeparators();
+    if (declaredType.empty() && IsQuoted(Cur().text)) {
+        std::string first = ToLower(Unquote(Cur().text));
         bool isParam = false;
         for (const char* k : kMaterialParams)
-            if (entries[0].key == k) {
+            if (first == k || first.find(' ') != std::string::npos) {
                 isParam = true;
                 break;
             }
         if (!isParam) {
-            type = entries[0].key;
-            entries.erase(entries.begin());
+            type = first;
+            Next();
         }
     }
+    std::vector<Entry> entries = ReadEntries();
+    std::string namedType = EntryString(entries, "type");
+    if (!namedType.empty()) type = ToLower(namedType);
 
     MaterialType mt = MaterialType::Diffuse;
     if (type == "mirror")
         mt = MaterialType::Mirror;
     else if (type == "dielectric" || type == "glass")
         mt = MaterialType::Dielectric;
-    else if (type == "phong" || type == "blinnphong" || type == "blinn")
+    else if (type == "phong")
         mt = MaterialType::Phong;
+    else if (type == "blinnphong" || type == "blinn")
+        mt = MaterialType::BlinnPhong;
     else if (type == "plastic")
         mt = MaterialType::Plastic;
-    else if (type != "diffuse" && type != "lambertian" && type != "constant")
+    else if (type != "diffuse" && type != "matte" && type != "lambertian" && type != "constant")
         Logger::Instance().Warn("unknown material type '" + type +
                                 "'; using a diffuse material");
 
@@ -719,6 +759,7 @@ void SceneReader::ParseMaterial(const std::string& name, Scene* scene) {
     double s;
     if (GetNum1(entries, "shininess", &s)) m->shininess = s;
     if (GetNum1(entries, "phongexponent", &s)) m->phongExponent = s;
+    if (GetNum1(entries, "phong", &s)) m->phongExponent = s;
     if (GetNum1(entries, "exponent", &s)) m->phongExponent = s;
     if (GetNum1(entries, "eta", &s)) {
         if (s <= 0) {
@@ -734,6 +775,19 @@ void SceneReader::ParseMaterial(const std::string& name, Scene* scene) {
     }
     if (GetCol(entries, "texmod", &c)) m->textureModulate = c;
     ApplyTexture(m.get(), entries);
+    for (const char* key : {"reflectance", "kd"}) {
+        const Entry* e = FindEntry(entries, key);
+        if (e && e->type == "texture") {
+            std::string textureName = EntryString(entries, key);
+            auto it = namedTextures_.find(textureName);
+            if (it != namedTextures_.end()) {
+                m->reflectance = Color(1);
+                m->SetDiffuseTexture(it->second);
+            } else {
+                Error(e->line, "unknown texture '" + textureName + "'");
+            }
+        }
+    }
     namedMaterials_[name] = m;
     scene->materials.push_back(m);
 }
@@ -759,7 +813,7 @@ void SceneReader::ParseTriangleMesh(const std::string& name,
         ++nError;
         return;
     }
-    auto tris = mesh->BuildTriangles(xf);
+    auto tris = mesh->BuildTriangles(xf * EntryTransforms(entries));
     if (tris.size() + scene->shapes.size() > static_cast<size_t>(scene->maxPrimitives)) {
         Logger::Instance().Warn("mesh '" + file + "' skipped: the scene would exceed the " +
                                 std::to_string(scene->maxPrimitives) + " primitive limit");
@@ -805,6 +859,12 @@ void SceneReader::ParseShape(const std::string& name, Scene* scene) {
     if (type == "trianglemesh" || type == "plymesh" || type == "bilinearmesh") {
         // Mesh blocks carry the filename as the first value after the type.
         std::vector<std::string> vals = ReadValue();
+        Transform xf;
+        SkipSeparators();
+        while (!Eof() && IsTransformOp(Cur().text)) {
+            xf = xf * ReadTransformOp();
+            SkipSeparators();
+        }
         std::vector<Entry> rest = ReadEntries();
         std::vector<Entry> all;
         Entry fileEntry;
@@ -814,7 +874,7 @@ void SceneReader::ParseShape(const std::string& name, Scene* scene) {
         for (auto& e : rest) all.push_back(e);
         if (type != "trianglemesh")
             Logger::Instance().Warn("mesh shape '" + type + "' is read as a trianglemesh");
-        ParseTriangleMesh(name, all, Transform(), scene);
+        ParseTriangleMesh(name, all, xf, scene);
         return;
     }
 
@@ -872,6 +932,11 @@ void SceneReader::ParseShape(const std::string& name, Scene* scene) {
         shape = std::make_shared<Sphere>(r);
     } else if (type == "plane") {
         shape = std::make_shared<Plane>();
+        for (double v : posNums)
+            if (v != 0) {
+                Warn(typeTok, "plane position numbers are ignored; use translate/rotate");
+                break;
+            }
     } else if (type == "triangle") {
         auto tri = std::make_shared<Triangle>();
         std::vector<double> v = posNums;
@@ -968,7 +1033,6 @@ void SceneReader::ParseShape(const std::string& name, Scene* scene) {
         m = copy.get();
         shape->material = m;
     }
-    if (shape->isLightEmitter) m->emission = emis;
     if (scene->shapes.size() >= static_cast<size_t>(scene->maxPrimitives)) {
         Logger::Instance().Warn("shape '" + name +
                                 "' skipped: the primitive limit was reached");
@@ -982,6 +1046,7 @@ void SceneReader::ParseLight(const std::string& dir, const std::string& typeIn,
                              Scene* scene) {
     std::string type = ToLower(typeIn);
     auto entries = ReadEntries();
+    Transform lightTransform = EntryTransforms(entries);
     std::string typeName = type;
     // AreaLight "n" { "rectangle" [ ... ] } -- the type is the first value.
     if (dir == "arealight" || dir == "pointlight" || dir == "distantlight" ||
@@ -1029,7 +1094,7 @@ void SceneReader::ParseLight(const std::string& dir, const std::string& typeIn,
         } else {
             Error(0, "point light has no position");
         }
-        l->position = pos;
+        l->position = lightTransform.TransformPoint(pos);
         l->intensity = intensity * scale;
         scene->lights.push_back(l);
         std::ostringstream os;
@@ -1102,7 +1167,13 @@ void SceneReader::ParseLight(const std::string& dir, const std::string& typeIn,
         }
         l->shape = (typeName == "disk")  ? AreaLight::Shape::Disk
                    : (typeName == "sphere") ? AreaLight::Shape::Sphere
-                                            : AreaLight::Shape::Rectangle;
+                                             : AreaLight::Shape::Rectangle;
+        l->SetTransform(lightTransform * l->objectToWorld);
+        int lightSamples;
+        if (GetInt1(entries, "samples", &lightSamples)) {
+            if (lightSamples < 1) Warn(0, "light samples must be >= 1; clamping");
+            l->samples = std::max(1, lightSamples);
+        }
         l->emission = emission;
         l->scale = scale;
         if (auto tex = LoadTextureFrom(entries)) l->emissionTexture = tex;
@@ -1117,8 +1188,10 @@ void SceneReader::ParseLight(const std::string& dir, const std::string& typeIn,
 void SceneReader::ParseCamera(Scene* scene) {
     auto entries = ReadEntries();
     // pbrt-v3 form: "lookat" 0 1 5  0 1 0   (bare tokens, not an entry)
-    Vec3 pos(0, 0, 1), look(0, 0, 0), up(0, 1, 0);
-    bool haveLook = false;
+    Vec3 pos = standardSyntax_ ? standardEye_ : Point3(0, 0, 1);
+    Vec3 look = standardSyntax_ ? standardLook_ : Point3(0);
+    Vec3 up = standardSyntax_ ? standardUp_ : Vec3(0, 1, 0);
+    bool haveLook = standardSyntax_;
     if (const Entry* e = FindEntry(entries, "lookat")) {
         std::vector<double> v;
         if (EntryNumbers(*e, &v) && v.size() >= 6) {
@@ -1138,6 +1211,7 @@ void SceneReader::ParseCamera(Scene* scene) {
     GetNum1(entries, "fov", &fov);
     GetNum1(entries, "focalength", &fov);
     GetNum1(entries, "apertureradius", &aperture);
+    GetNum1(entries, "lensradius", &aperture);
     GetNum1(entries, "aperture", &aperture);
     GetNum1(entries, "focusdistance", &focus);
     GetNum1(entries, "focaldistance", &focus);
@@ -1161,6 +1235,13 @@ void SceneReader::ParseCamera(Scene* scene) {
     double ar;
     if (GetNum1(entries, "aspectratio", &ar) || GetNum1(entries, "pixelsize", &ar)) {
         if (ar > 0) scene->film.pixelAspect = ar;
+    }
+    if (standardSyntax_) {
+        // Standard PBRT's default screen window applies fov to the smaller
+        // image axis; our block syntax applies it to the larger axis.
+        double aspect = scene->film.pixelAspect * scene->film.xResolution / scene->film.yResolution;
+        double ratio = std::max(aspect, 1.0 / aspect);
+        fov = Degrees(2 * std::atan(ratio * std::tan(Radians(fov) * 0.5)));
     }
 
     std::string type = ToLower(EntryString(entries, "type"));
@@ -1275,9 +1356,205 @@ void SceneReader::ParseFilm(Scene* scene) {
     if (GetNum1(entries, "aspectratio", &ar) && ar > 0) scene->film.pixelAspect = ar;
 }
 
+bool SceneReader::ParseStandard(Scene* scene) {
+    Transform xf;
+    Material* material = scene->materials.front().get();
+    Color areaEmission(0);
+    std::vector<std::tuple<Transform, Material*, Color>> stack;
+    while (!Eof()) {
+        SkipSeparators();
+        if (Eof()) break;
+        Token directive = Cur();
+        std::string dir = ToLower(directive.text);
+        Next();
+        SkipSeparators();
+        std::string name;
+        if (IsQuoted(Cur().text)) {
+            name = Unquote(Cur().text);
+            Next();
+        }
+        if (dir == "film") {
+            ParseFilm(scene);
+        } else if (dir == "integrator") {
+            if (ToLower(name) == "path")
+                Warn(directive, "path integrator is approximated by Module 1 direct-light DRT");
+            ParseIntegrator(name, scene);
+        } else if (dir == "lookat") {
+            auto values = NumbersFromTokens(ReadValue());
+            if (values.size() != 9) Error(directive, "LookAt requires 9 numbers");
+            else {
+                standardEye_ = Point3(values[0], values[1], values[2]);
+                standardLook_ = Point3(values[3], values[4], values[5]);
+                standardUp_ = Vec3(values[6], values[7], values[8]);
+            }
+        } else if (dir == "camera") {
+            // Reuse camera parameter handling while preserving the declared type.
+            t_.insert(t_.begin() + p_, {Token{"\"string type", directive.line, 0},
+                                       Token{"\"" + name, directive.line, 0}});
+            ParseCamera(scene);
+        } else if (dir == "sampler") {
+            auto entries = ReadEntries();
+            int count;
+            if (GetInt1(entries, "pixelsamples", &count)) scene->spp = std::max(1, count);
+            if (name != "independent" && name != "random")
+                Warn(directive, "sampler '" + name + "' uses independent uniform samples in Module 1");
+        } else if (dir == "worldbegin") {
+            xf = Transform();
+        } else if (dir == "worldend") {
+            // End marker carries no parameters.
+        } else if (dir == "attributebegin") {
+            stack.emplace_back(xf, material, areaEmission);
+        } else if (dir == "attributeend") {
+            if (stack.empty()) Error(directive, "AttributeEnd has no matching AttributeBegin");
+            else {
+                std::tie(xf, material, areaEmission) = stack.back();
+                stack.pop_back();
+            }
+        } else if (dir == "identity") {
+            xf = Transform();
+        } else if (dir == "translate" || dir == "scale" || dir == "rotate") {
+            auto v = NumbersFromTokens(ReadValue());
+            if (dir == "translate" && v.size() == 3)
+                xf = xf * Transform::Translate(Vec3(v[0], v[1], v[2]));
+            else if (dir == "scale" && v.size() == 3)
+                xf = xf * Transform::Scale(v[0], v[1], v[2]);
+            else if (dir == "rotate" && v.size() == 4)
+                xf = xf * Transform::Rotate(Vec3(v[1], v[2], v[3]), v[0]);
+            else Error(directive, "malformed " + directive.text);
+        } else if (dir == "material" || dir == "makenamedmaterial") {
+            std::string id = dir == "material" ? "__material" + std::to_string(scene->materials.size()) : name;
+            ParseMaterial(id, scene, dir == "material" ? name : "");
+            if (dir == "material") material = namedMaterials_[id].get();
+        } else if (dir == "namedmaterial") {
+            material = ResolveMaterial(scene, name);
+        } else if (dir == "texture") {
+            SkipSeparators();
+            std::string valueType = Unquote(Cur().text);
+            Next();
+            SkipSeparators();
+            std::string textureType = Unquote(Cur().text);
+            Next();
+            auto entries = ReadEntries();
+            if (textureType != "imagemap" || (valueType != "spectrum" && valueType != "color")) {
+                Warn(directive, "only spectrum/color imagemap textures are supported");
+                continue;
+            }
+            std::string error;
+            auto texture = LoadTexturePPM(ResolvePath(EntryString(entries, "filename")), &error);
+            if (!texture) Error(directive, error);
+            else namedTextures_[name] = texture;
+        } else if (dir == "lightsource") {
+            auto entries = ReadEntries();
+            if (name != "point") {
+                Warn(directive, "unsupported LightSource '" + name + "'");
+                continue;
+            }
+            Point3 from(0);
+            if (const Entry* e = FindEntry(entries, "from")) {
+                std::vector<double> v;
+                if (!EntryNumbers(*e, &v) || v.size() != 3) Error(directive, "point light 'from' requires 3 numbers");
+                else from = Point3(v[0], v[1], v[2]);
+            }
+            auto light = std::make_shared<PointLight>(xf.TransformPoint(from));
+            GetCol(entries, "i", &light->intensity);
+            GetCol(entries, "intensity", &light->intensity);
+            scene->lights.push_back(light);
+        } else if (dir == "arealightsource") {
+            auto entries = ReadEntries();
+            areaEmission = Color(1);
+            if (name != "diffuse") {
+                Warn(directive, "unsupported AreaLightSource '" + name + "'");
+                areaEmission = Color(0);
+            } else GetCol(entries, "l", &areaEmission);
+        } else if (dir == "shape") {
+            auto entries = ReadEntries();
+            if (name == "sphere") {
+                double radius = 1;
+                GetNum1(entries, "radius", &radius);
+                if (radius <= 0) {
+                    Error(directive, "sphere radius must be positive");
+                    continue;
+                }
+                auto sphere = std::make_shared<Sphere>(radius);
+                sphere->SetTransform(xf);
+                sphere->material = material;
+                sphere->isLightEmitter = !areaEmission.IsBlack();
+                sphere->emission = areaEmission;
+                scene->shapes.push_back(sphere);
+                if (!areaEmission.IsBlack()) {
+                    // Sphere area sampling supports rigid/uniform-scale transforms.
+                    auto light = std::make_shared<AreaLight>();
+                    light->shape = AreaLight::Shape::Sphere;
+                    light->radius = radius;
+                    light->SetTransform(xf);
+                    light->emission = areaEmission;
+                    scene->lights.push_back(light);
+                }
+            } else if (name == "trianglemesh") {
+                std::vector<double> points, indices, uvs, normals;
+                const Entry* p = FindEntry(entries, "p");
+                const Entry* ind = FindEntry(entries, "indices");
+                if (!p || !ind || !EntryNumbers(*p, &points) || !EntryNumbers(*ind, &indices) ||
+                    points.size() % 3 != 0 || indices.size() % 3 != 0) {
+                    Error(directive, "trianglemesh requires point3 P and integer indices lists");
+                    continue;
+                }
+                if (const Entry* uv = FindEntry(entries, "uv")) EntryNumbers(*uv, &uvs);
+                if (const Entry* normal = FindEntry(entries, "n")) EntryNumbers(*normal, &normals);
+                TriangleMesh mesh;
+                for (size_t i = 0; i < points.size(); i += 3)
+                    mesh.P.emplace_back(points[i], points[i + 1], points[i + 2]);
+                for (size_t i = 0; i + 1 < uvs.size(); i += 2)
+                    mesh.UVs.emplace_back(uvs[i], 1 - uvs[i + 1]);
+                for (size_t i = 0; i + 2 < normals.size(); i += 3)
+                    mesh.N.emplace_back(normals[i], normals[i + 1], normals[i + 2]);
+                for (size_t i = 0; i < indices.size(); i += 3) {
+                    TriangleMesh::Face face;
+                    bool valid = true;
+                    for (int c = 0; c < 3; ++c) {
+                        double index = indices[i + c];
+                        if (index < 0 || index >= mesh.P.size() || index != std::floor(index)) { valid = false; break; }
+                        face.v[c] = static_cast<int>(index);
+                        if (index < mesh.UVs.size()) face.vt[c] = face.v[c];
+                        if (index < mesh.N.size()) face.vn[c] = face.v[c];
+                    }
+                    if (!valid) Error(directive, "trianglemesh index out of range");
+                    else mesh.faces.push_back(face);
+                }
+                if (mesh.N.empty()) mesh.RecomputeNormals();
+                auto tris = mesh.BuildTriangles(xf);
+                for (auto& tri : tris) {
+                    tri->material = material;
+                    tri->isLightEmitter = !areaEmission.IsBlack();
+                    tri->emission = areaEmission;
+                    scene->shapes.push_back(tri);
+                }
+                scene->numTriangles += static_cast<int>(tris.size());
+                if (!areaEmission.IsBlack()) {
+                    if (mesh.P.size() == 4 && indices.size() == 6) {
+                        auto light = std::make_shared<AreaLight>();
+                        light->SetTransform(RectTransform(xf.TransformPoint(mesh.P[0]),
+                                                          xf.TransformPoint(mesh.P[1]),
+                                                          xf.TransformPoint(mesh.P[3])));
+                        light->emission = areaEmission;
+                        scene->lights.push_back(light);
+                    } else Warn(directive, "only four-corner trianglemesh area emitters are sampled in this subset");
+                }
+            } else Warn(directive, "unsupported Shape '" + name + "'");
+        } else {
+            Warn(directive, "unsupported standard PBRT directive '" + directive.text + "'");
+            ReadEntries();
+        }
+    }
+    if (!stack.empty()) Error(0, "unclosed AttributeBegin scope");
+    scene->numPrimitives = static_cast<int>(scene->shapes.size());
+    return nError == 0;
+}
+
 bool SceneReader::Parse(Scene* scene) {
     Logger::Instance().Info("scene starts with one default diffuse material");
     scene->materials.push_back(DefaultMaterial());
+    if (standardSyntax_) return ParseStandard(scene);
     SkipSeparators();
     while (!Eof()) {
         Token dirTok = Cur();

@@ -107,7 +107,7 @@ int WrapCoord(int i, int n, TextureWrap w) {
         case TextureWrap::Clamp:
             return Clamp(i, 0, n - 1);
         case TextureWrap::Black:
-            return -1;
+            return i >= 0 && i < n ? i : -1;
     }
     return i;
 }

@@ -79,8 +79,20 @@ inline int MaxComponentDim(Vec3 a) {
 }
 inline Vec3 Permute(Vec3 v, int x, int y, int z) { return {v[x], v[y], v[z]}; }
 
-// Mirror a direction about a unit normal (Lambert's reflection formula).
+// Both wo and the returned direction point away from the surface.
 inline Vec3 Reflect(Vec3 wo, Normal n) { return -wo + 2.0f * Dot(wo, n) * n; }
+
+// d points into the surface; n is a unit normal opposing d.
+// Returns false for total internal reflection. etaI/etaT is the Snell ratio.
+inline bool RefractIncident(Vec3 d, Normal n, double etaI, double etaT, Vec3* wt) {
+    double eta = etaI / etaT;
+    double cosI = Clamp(-Dot(d, n), 0.0, 1.0);
+    double sin2T = eta * eta * std::max(0.0, 1.0 - cosI * cosI);
+    if (sin2T >= 1.0) return false;
+    double cosT = std::sqrt(std::max(0.0, 1.0 - sin2T));
+    *wt = Normalize(eta * d + (eta * cosI - cosT) * n);
+    return true;
+}
 
 // Cosine-weighted hemisphere sample about the +z axis, given u,v in [0,1).
 inline Point3 SampleCosineHemisphere(double u, double v) {

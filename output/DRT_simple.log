@@ -1,19 +1,21 @@
 [INFO ] CGR26_renderer starting
-[INFO ] command line: scene='/Users/jacksu/Desktop/CGR/cw/scenes/DRT_simple.pbrt' output='/Users/jacksu/Desktop/CGR/cw/output'
-[INFO ] parsing '/Users/jacksu/Desktop/CGR/cw/scenes/DRT_simple.pbrt' (81 lines)
+[INFO ] command line: scene='scenes/DRT_simple.pbrt' output='output'
+[INFO ] parsing 'scenes/DRT_simple.pbrt' (87 lines)
 [INFO ] scene starts with one default diffuse material
-[INFO ] integrator 'distributed': maxdepth=4 BF=4 spp=8 sampler=uniform
-[INFO ] camera: thin-lens perspective, fov=36.000000 aperture=0.035000 focus=7.200000 pos=(0.000000,1.900000,7.500000) look=(0.000000,1.150000,0.000000) fwd=(0.000000,-0.099504,-0.995037)
-[INFO ] loaded texture 'textures/checker.ppm' (64x64)
-[INFO ] loaded mesh 'meshes/icosphere.obj': 500 triangles
-[INFO ] area light (rectangle) area=12.000000
-[INFO ] area light (rectangle) area=5.290000
-[INFO ] parsed scene: 502 shapes, 2 lights, 4 materials, integrator='distributed'
+[INFO ] integrator 'distributed': maxdepth=4 BF=4 spp=32 sampler=uniform
+[INFO ] camera: thin-lens perspective, fov=46.000000 aperture=0.180000 focus=9.000000 pos=(0.900000,2.400000,9.000000) look=(0.900000,1.000000,0.000000) fwd=(0.000000,-0.153707,-0.988116)
+[INFO ] loaded texture 'textures/wood.ppm' (64x64)
+[INFO ] loaded texture 'textures/broad_checker.ppm' (32x32)
+[INFO ] loaded mesh 'meshes/uv_geodesic.obj': 320 triangles
+[INFO ] loaded mesh 'meshes/display_box.obj': 12 triangles
+[INFO ] area light (rectangle) area=25.200000
+[INFO ] area light (rectangle) area=5.750000
+[INFO ] parsed scene: 336 shapes, 2 lights, 6 materials, integrator='distributed'
 [INFO ] integrator: distributed
-[INFO ] DRT: 450x300, maxDepth=4 BF=4 spp=8 sampler=uniform lensRadius=0.035000 focus=7.200000
-[INFO ] DRT frame time: 49.007841 s
-[INFO ] wrote /Users/jacksu/Desktop/CGR/cw/output/DRT_simple.png (450x300)
-[INFO ] image mean=(0.147820, 0.147151, 0.151906) min=0.001401 max=1.000000 stddev=(0.134997, 0.134768, 0.137913)
-[INFO ]   render            49.0078 s
+[INFO ] DRT: 600x400, maxDepth=4 BF=4 spp=32 sampler=uniform lensRadius=0.180000 focus=9.000000
+[INFO ] DRT frame time: 66.585001 s
+[INFO ] wrote output/DRT_simple.png (600x400)
+[INFO ] image mean=(0.189615, 0.168991, 0.157135) min=0.000000 max=0.973973 stddev=(0.146470, 0.152670, 0.178310)
+[INFO ]   render            66.5850 s
 [INFO ] parse warnings=0 parse errors=0
 [INFO ] CGR26_renderer finished

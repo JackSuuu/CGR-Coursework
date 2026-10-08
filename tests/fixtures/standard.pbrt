@@ -1,0 +1,21 @@
+# Standard PBRT statement syntax, including multiline arrays and scopes.
+Film "rgb" "integer xresolution" [80] "integer yresolution" [60]
+Sampler "independent" "integer pixelsamples" [4]
+Integrator "whitted" "integer maxdepth" [5]
+LookAt 0 0 5  0 0 0  0 1 0
+Camera "perspective" "float fov" [40] "float lensradius" [0.1] "float focaldistance" [5]
+WorldBegin
+Texture "checker" "spectrum" "imagemap" "string filename" ["../../scenes/textures/checker.ppm"]
+Material "diffuse" "texture reflectance" ["checker"]
+AttributeBegin
+    Translate 1 0 0
+    Scale 2 2 2
+    Shape "sphere" "float radius" [1]
+AttributeEnd
+LightSource "point" "point3 from" [0 0 4] "rgb I" [4 5 6]
+AttributeBegin
+    AreaLightSource "diffuse" "rgb L" [7 8 9]
+    Shape "trianglemesh"
+        "point3 P" [-2 3 -1  2 3 -1  2 3 1  -2 3 1]
+        "integer indices" [0 1 2  0 2 3]
+AttributeEnd

@@ -13,8 +13,8 @@ class TriangleMesh {
   public:
     struct Face {
         int v[3] = {0, 0, 0};  // vertex indices
-        int vt[3] = {0, 0, 0}; // uv indices
-        int vn[3] = {0, 0, 0}; // normal indices
+        int vt[3] = {-1, -1, -1}; // -1 means absent
+        int vn[3] = {-1, -1, -1};
     };
 
     std::string name;

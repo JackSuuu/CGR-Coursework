@@ -49,6 +49,8 @@ class Material {
     // f(wo, wi): Lambertian term plus an energy-conserving glossy lobe. Both
     // wo and wi point away from the surface, into the visible hemisphere of n.
     virtual Color F(const Normal& n, Vec3 wo, Vec3 wi) const;
+    // Same BRDF with the texture-modulated diffuse colour at this intersection.
+    Color F(const Normal& n, Vec3 wo, Vec3 wi, Color diffuse) const;
 
     virtual std::string Name() const = 0;
 
@@ -83,7 +85,7 @@ using MaterialPtr = std::shared_ptr<Material>;
 
 std::shared_ptr<Material> MakeMaterial(MaterialType t);
 
-// Fresnel dielectric reflectance for unpolarised light, pbrt's FrDielectric.
+// Unpolarised Fresnel reflectance. cosThetaI >= 0, eta = etaT / etaI.
 double FrDielectric(double cosThetaI, double eta);
 
 }  // namespace cgr

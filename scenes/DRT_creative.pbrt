@@ -1,4 +1,5 @@
 # DRT_creative -- the DRT pushed a bit further than DRT_simple.
+# Provisional tabletop study: not yet tied to a supplied real photograph.
 #
 # Extra features on show:
 #   1. three area lights of different sizes: penumbra width tracks light size,
@@ -7,48 +8,53 @@
 #   3. a mirror ball next to rough surfaces, so the delta/rough split shows
 #   4. thin lens focused on the *back* object, so the front mesh is defocused
 #   5. a bright emissive panel acting as the main source (visible in mirrors)
-#   6. colour bleeding onto the white floor from the coloured objects
+#   6. coloured glossy highlights and textured mesh surfaces
 #   7. per-channel Reinhard on a scene whose dynamic range is deliberately wide
 
 Integrator "distributed" {
-    "integer maxdepth" 6
-    "integer bf" 4
-    "integer spp" 8
+    "integer maxdepth" 4
+    "integer spp" 24
+    "float whitepoint" 8
 }
 
 Film "drtCreative" {
-    "integer xresolution" 360
-    "integer yresolution" 240
+    "integer xresolution" 480
+    "integer yresolution" 320
 }
 
 Camera "cam" {
-    "lookat" 0 1.6 8.5    0 1.3 -1.5   0 1 0
-    "float fov" 40
+    "lookat" 0 2.0 10.5    0 1.2 -1.0   0 1 0
+    "float fov" 50
     # 4. Focus is pulled to the far object, so the near mesh goes soft.
-    "float apertureradius" 0.10
-    "float focusdistance" 10.5
+    "float apertureradius" 0.18
+    "float focusdistance" 13.5
 }
 
 # ---- materials ---------------------------------------------------------
 Material "whiteFloor" {
-    # 6. Near-white diffuse so colour bleeding is easy to see.
+    # Near-white diffuse floor shows shadows from the finite emitters.
     "phong" "reflectance" [ 0.90 0.90 0.88 ] "specularreflectance" [ 0.04 0.04 0.04 ] "float phong" 20
+    "texture" "diffuse" "textures/wood.ppm"
+    "float uscale" 0.5
+    "float vscale" 0.5
 }
 Material "stone" {
-    "phong" "reflectance" [ 0.48 0.47 0.44 ] "specularreflectance" [ 0.18 0.18 0.18 ] "float phong" 25
-    "texture" "diffuse" "textures/checker.ppm"
-    "float uscale" 2
-    "float vscale" 2
+    "phong" "reflectance" [ 0.9 0.9 0.9 ] "specularreflectance" [ 0.08 0.08 0.08 ] "float phong" 25
+    "texture" "diffuse" "textures/broad_checker.ppm"
 }
 Material "redMetal" {
     "mirror" "reflectance" [ 0.85 0.25 0.20 ]
 }
 Material "greenPhong" {
-    "phong" "reflectance" [ 0.10 0.50 0.20 ] "specularreflectance" [ 0.7 0.7 0.7 ] "float phong" 80
+    "phong" "reflectance" [ 0.10 0.50 0.20 ] "specularreflectance" [ 0.25 0.25 0.25 ] "float phong" 50
 }
 Material "bluePhong" {
-    "phong" "reflectance" [ 0.10 0.22 0.65 ] "specularreflectance" [ 0.9 0.9 0.9 ] "float phong" 140
+    "phong" "reflectance" [ 0.10 0.22 0.65 ] "specularreflectance" [ 0.3 0.3 0.3 ] "float phong" 70
 }
+Material "paper" { "phong" "reflectance" [ 0.9 0.85 0.75 ] "specularreflectance" [ 0.02 0.02 0.02 ] "float phong" 15 "texture" "diffuse" "textures/paper.ppm" }
+Material "bookCover" { "phong" "reflectance" [ 0.12 0.24 0.38 ] "specularreflectance" [ 0.1 0.1 0.1 ] "float phong" 35 }
+Material "backdrop" { "phong" "reflectance" [ 0.2 0.25 0.3 ] "specularreflectance" [ 0.01 0.01 0.01 ] "float phong" 10 }
+Material "glass" { "dielectric" "reflectance" [ 1 1 1 ] "float eta" 1.5 }
 
 # ---- geometry ----------------------------------------------------------
 Shape "ground" {
@@ -56,10 +62,15 @@ Shape "ground" {
     "rotate" 1 0 0 -90
     "material" "whiteFloor"
 }
+Shape "backWall" { "plane" [ 0 0 0 ] "translate" 0 0 -6 "material" "backdrop" }
+Shape "bookPages" { "trianglemesh" "meshes/display_box.obj" "translate" 1.4 0.04 -3.2 "scale" 2.55 0.36 1.85 "material" "paper" }
+Shape "bookBottom" { "trianglemesh" "meshes/display_box.obj" "translate" 1.4 0 -3.2 "scale" 2.70 0.04 2.0 "material" "bookCover" }
+Shape "bookTop" { "trianglemesh" "meshes/display_box.obj" "translate" 1.4 0.40 -3.2 "scale" 2.70 0.04 2.0 "material" "bookCover" }
+Shape "glassPaperweight" { "sphere" [ 0.48 ] "translate" 1.4 0.48 1.8 "material" "glass" }
 
 # 2/4. Near mesh: coarse, textured, and out of focus.
 Shape "nearMesh" {
-    "trianglemesh" "meshes/icosphere.obj"
+    "trianglemesh" "meshes/uv_geodesic.obj"
     "translate" -1.6 1.0 2.4
     "scale" 1.0 1.0 1.0
     "material" "stone"
@@ -67,8 +78,8 @@ Shape "nearMesh" {
 
 # Far mesh: in focus, reflective.
 Shape "farMesh" {
-    "trianglemesh" "meshes/icosphere.obj"
-    "translate" 1.4 1.1 -3.2
+    "trianglemesh" "meshes/uv_geodesic.obj"
+    "translate" 1.4 1.54 -3.2
     "scale" 1.1 1.1 1.1
     "material" "redMetal"
 }
@@ -94,18 +105,17 @@ Shape "blueBall" {
 # 1/5. Key: a large bright panel. Its reflection is visible in the mirror ball
 # and the red metal mesh.
 Light "key" {
-    "rectangle" [ -2.2 4.6 3.6   2.2 4.6 3.6 ]
-    "radiance" [ 42 40 37 ]
+    "rectangle" [ -2.2 4.6 -2.0   2.2 4.6 -2.0   2.2 4.6 1.6   -2.2 4.6 1.6 ]
+    "radiance" [ 12 11.5 10 ]
 }
-# A small, very bright light: nearly the same irradiance as the key but a much
-# tighter penumbra. The contrast between this and "key" is the point of the shot.
+# A smaller, brighter emitter adds compact highlights; its illumination is
+# combined with the larger key, so this is not a controlled penumbra experiment.
 Light "spec" {
-    "rectangle" [ -0.5 3.2 2.2   0.5 3.2 2.2 ]
-    "radiance" [ 120 118 112 ]
+    "rectangle" [ -0.5 3.8 1.0   0.5 3.8 1.0   0.5 3.8 2.0   -0.5 3.8 2.0 ]
+    "radiance" [ 30 29 27 ]
 }
 # Cool rim from behind-left.
 Light "rim" {
-    "rectangle" [ -5.0 1.6 -1.0   -5.0 4.2 -1.0 ]
-    "rotate" 0 1 0 90
-    "radiance" [ 8 12 22 ]
+    "rectangle" [ -5.0 1.6 -3.0   -5.0 4.2 -3.0   -5.0 4.2 -1.0   -5.0 1.6 -1.0 ]
+    "radiance" [ 4 6 10 ]
 }

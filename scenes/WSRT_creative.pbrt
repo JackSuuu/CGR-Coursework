@@ -1,13 +1,15 @@
 # WSRT_creative -- the WSRT pushed a bit further than WSRT_simple.
+# Provisional tabletop optics still life; the student must provide a real
+# inspiration photograph and adapt/justify the arrangement before submission.
 #
-# Extra features on show, each of which is called out in the report:
-#   1. Fresnel-weighted mirror/dielectric mix on the water-like pool floor
-#   2. total internal reflection: the tall glass slab viewed at a grazing angle
+# Features available for the student's own image annotations:
+#   1. a textured diffuse floor with hard shadows
+#   2. Fresnel reflection/refraction through a closed, elongated glass object
 #   3. multiple nested mirrors (the two chrome spheres reflect each other)
-#   4. two point lights with different colours -> colour bleeding + specular tint
-#   5. a texture-mapped diffuse floor plus a texture-mapped mirror
+#   4. two point lights with different colours -> coloured lighting/highlights
+#   5. UV texture mapping on the diffuse floor
 #   6. shadow rays through the "arch" of triangles
-#   7. deep recursion: the mirror-in-mirror path reaches maxdepth
+#   7. recursive mirror-in-mirror paths, bounded by maxdepth
 
 Integrator "whitted" {
     "integer maxdepth" 12
@@ -20,21 +22,18 @@ Film "creative" {
 
 Camera "cam" {
     "lookat" 0 2.2 11.0   0 1.4 0   0 1 0
-    "float fov" 34
+    "float fov" 48
 }
 
 # ---- materials ---------------------------------------------------------
 Material "marble" {
     "diffuse" "reflectance" [ 0.85 0.83 0.80 ]
-    "texture" "diffuse" "textures/tiles.ppm"
-    "float uscale" 8
-    "float vscale" 8
+    "texture" "diffuse" "textures/wood.ppm"
+    "float uscale" 0.6
+    "float vscale" 0.6
 }
 Material "chromeA" {
     "mirror" "reflectance" [ 1.0 0.97 0.92 ]
-    "texture" "reflectance" "textures/checker.ppm"
-    "float uscale" 3
-    "float vscale" 2
 }
 Material "chromeB" {
     "mirror" "reflectance" [ 0.90 0.93 1.00 ]
@@ -54,6 +53,9 @@ Material "tealBall" {
 Material "arch" {
     "blinnphong" "reflectance" [ 0.55 0.55 0.60 ] "specularreflectance" [ 0.3 0.3 0.3 ] "float shininess" 25
 }
+Material "paper" { "blinnphong" "reflectance" [ 0.9 0.85 0.72 ] "specularreflectance" [ 0.02 0.02 0.02 ] "shininess" 15 "texture" "diffuse" "textures/paper.ppm" }
+Material "bookCover" { "blinnphong" "reflectance" [ 0.12 0.24 0.38 ] "specularreflectance" [ 0.15 0.15 0.15 ] "shininess" 35 }
+Material "backdrop" { "diffuse" "reflectance" [ 0.16 0.22 0.28 ] }
 
 # ---- geometry ----------------------------------------------------------
 # Marble floor. pbrt planes are xy with normal +z, so rotate -90 about x.
@@ -62,9 +64,13 @@ Shape "floor" {
     "rotate" 1 0 0 -90
     "material" "marble"
 }
+Shape "backdrop" { "plane" [ 0 0 0 ] "translate" 0 0 -6 "material" "backdrop" }
+Shape "bookPages" { "trianglemesh" "meshes/display_box.obj" "translate" 1.1 0.04 -2.4 "scale" 2.15 0.30 1.45 "material" "paper" }
+Shape "bookBottom" { "trianglemesh" "meshes/display_box.obj" "translate" 1.1 0 -2.4 "scale" 2.30 0.04 1.60 "material" "bookCover" }
+Shape "bookTop" { "trianglemesh" "meshes/display_box.obj" "translate" 1.1 0.34 -2.4 "scale" 2.30 0.04 1.60 "material" "bookCover" }
 
 # 1/2. Two chrome balls facing each other: each shows the other, which is what
-# makes the recursion visible. The slab between them shows TIR.
+# makes the recursion visible. The glass between them refracts the background.
 Shape "chromeLeft" {
     "sphere" [ 1.15 ]
     "translate" -2.5 1.15 1.0
@@ -76,17 +82,15 @@ Shape "chromeRight" {
     "material" "chromeB"
 }
 
-# Tall dielectric slab, seen almost edge-on.
+# Closed dielectric geometry has a well-defined entry and exit surface.
 Shape "slab" {
-    "triangle" [ -0.28 0 3.2   0.28 0 3.2   0.28 3.0 3.2 ]
-    "material" "glassSlab"
-}
-Shape "slabSide" {
-    "triangle" [ -0.28 0 3.2   -0.28 3.0 3.2   0.28 3.0 3.2 ]
+    "sphere" [ 0.75 ]
+    "translate" 0 1.35 2.0
+    "scale" 0.6 1.8 0.8
     "material" "glassSlab"
 }
 
-# Phong and Blinn-Phong, so the two highlights can be compared side by side.
+# Coloured surfaces with Blinn-Phong highlights in the WSRT.
 Shape "ruby" {
     "sphere" [ 0.85 ]
     "translate" -0.9 0.85 -2.4
@@ -94,7 +98,7 @@ Shape "ruby" {
 }
 Shape "gold" {
     "sphere" [ 0.85 ]
-    "translate" 0.9 0.85 -2.4
+    "translate" 1.1 1.23 -2.4
     "material" "goldBall"
 }
 Shape "teal" {
@@ -120,7 +124,7 @@ Shape "archTop" {
 
 # ---- lights ------------------------------------------------------------
 # 4. A warm key and a cool fill. The WSRT traces one shadow ray per light, so
-# the two shadows stay hard-edged -- softening them is Module 2's antialiasing.
+# the two shadows stay hard-edged; area-light soft shadows are a DRT feature.
 Light "key" {
     "point" [ -5.0 7.0 6.0 ]
     "intensity" [ 150 130 105 ]

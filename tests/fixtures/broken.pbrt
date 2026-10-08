@@ -1,0 +1,6 @@
+# Expected: unknown primitive error, missing texture error, unsupported directive warning.
+Film "test" { "integer xresolution" 8 "integer yresolution" 8 }
+Integrator "whitted" { "integer maxdepth" 2 }
+Material "badTexture" { "diffuse" "texture" "diffuse" "missing.ppm" }
+Shape "unknown" { "capsule" [1] }
+Object "unsupported" { "string type" "instance" }

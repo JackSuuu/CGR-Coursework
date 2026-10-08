@@ -27,7 +27,7 @@ SRCS := $(shell find $(SRCDIR) -name '*.cpp' | sort)
 OBJS := $(patsubst $(SRCDIR)/%.cpp,$(OBJDIR)/%.o,$(SRCS))
 DEPS := $(OBJS:.o=.d)
 
-.PHONY: all clean smoke scenes
+.PHONY: all clean smoke scenes check-module1
 
 all: $(OUT)
 
@@ -46,6 +46,13 @@ scenes: $(OUT)
 	@./renderReportedImages.sh
 
 smoke: scenes
+
+# Analytic regression checks for the core renderer, not the Module 3 PBRT suite.
+build/module1_checks: tests/module1_checks.cpp $(filter-out build/main.o,$(OBJS))
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS) $(LDLIBS)
+
+check-module1: build/module1_checks
+	./build/module1_checks
 
 clean:
 	rm -rf $(OBJDIR) $(OUT)

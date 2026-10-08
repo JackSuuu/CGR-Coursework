@@ -15,3 +15,12 @@ output/studentTests/
 # test suite outputs (regenerate with studentTests/runAllTests.sh)
 studentTests/**/*.log
 studentTests/**/*.png
+
+# LaTeX build artefacts (keep report source and PDF drafts).
+/reports/**/*.aux
+/reports/**/*.out
+/reports/**/*.log
+/reports/**/*.fls
+/reports/**/*.fdb_latexmk
+/reports/**/*.synctex.gz
+/reports/**/*.synctex(busy)

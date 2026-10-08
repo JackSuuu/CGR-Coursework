@@ -9,12 +9,13 @@ namespace cgr {
 namespace {
 // Nearest positive root of |o + t d - c| = r.
 double IntersectSphereRay(Point3 o, Vec3 d, double r) {
+    double a = LengthSquared(d);
     double b = 2.0 * Dot(o, d);
     double c = LengthSquared(o) - r * r;
-    double disc = b * b - 4.0 * c;
+    double disc = b * b - 4.0 * a * c;
     if (disc < 0) return -1;
     double s = std::sqrt(disc);
-    double t0 = (-b - s) * 0.5, t1 = (-b + s) * 0.5;
+    double t0 = (-b - s) / (2 * a), t1 = (-b + s) / (2 * a);
     if (t1 > 1e-9) return t0 > 1e-9 ? t0 : t1;
     return -1;
 }
@@ -49,22 +50,22 @@ Point3 AreaLight::SamplePoint(Point2 uv, Normal* ns) const {
         case Shape::Rectangle: {
             // Local x in [-1,1], y in [-1,1], z = 0, emitting towards +z.
             Point3 lp(2 * u - 1, 2 * v - 1, 0);
-            if (ns) *ns = Normal(0, 0, 1);
+            if (ns) *ns = objectToWorld.TransformNormal(Normal(0, 0, 1));
             return objectToWorld.TransformPoint(lp);
         }
         case Shape::Disk: {
             double r = radius * std::sqrt(u);
             double theta = 2.0 * kPi * v;
             Point3 lp(r * std::cos(theta), r * std::sin(theta), 0);
-            if (ns) *ns = Normal(0, 0, 1);
+            if (ns) *ns = objectToWorld.TransformNormal(Normal(0, 0, 1));
             return objectToWorld.TransformPoint(lp);
         }
         case Shape::Sphere: {
             double z = 1.0 - 2.0 * u;
             double r = std::sqrt(std::max(0.0, 1.0 - z * z));
             double theta = 2.0 * kPi * v;
-            Point3 lp(r * std::cos(theta), r * std::sin(theta), z);
-            if (ns) *ns = Normalize(lp);
+            Point3 lp = Vec3(r * std::cos(theta), r * std::sin(theta), z) * radius;
+            if (ns) *ns = objectToWorld.TransformNormal(Normalize(lp));
             return objectToWorld.TransformPoint(lp);
         }
     }
@@ -83,49 +84,45 @@ Point3 AreaLight::SampleLe(Point3 ref, Point2 uvm, double* dist2, Normal* ns,
 }
 
 double AreaLight::Pdf(Point3 ref, Vec3 wi) const {
-    // pbrt's power heuristic for area lights: pick the light with prob 1/N and
-    // convert the area pdf to solid angle.
     if (LengthSquared(wi) <= 0) return 0;
     Ray r(ref, Normalize(wi));
-    // Intersect with the light's own plane/sphere by sampling proximity: we
-    // reuse SampleLe semantics via a closest-point test on the local geometry.
-    double cosTheta = 0;
+    double t;
+    Normal n;
+    if (!IntersectRay(r, kInf, &t, &n)) return 0;
+    double cosTheta = std::fabs(Dot(n, -r.d));
+    double area = Area();
+    return cosTheta > 1e-9 && area > 0 ? t * t / (cosTheta * area) : 0;
+}
+
+bool AreaLight::IntersectRay(const Ray& ray, double tMax, double* tHit, Normal* ns) const {
+    Ray lo = worldToObject.TransformRay(ray);
+    double t;
+    Normal normal(0, 0, 1);
     switch (shape) {
         case Shape::Rectangle: {
-            Ray lo = worldToObject.TransformRay(r);
-            if (std::fabs(lo.d.z) < 1e-12) return 0;
-            double t = -lo.o.z / lo.d.z;
-            if (t <= 0) return 0;
+            if (std::fabs(lo.d.z) < 1e-12) return false;
+            t = -lo.o.z / lo.d.z;
             Point3 hit = lo(t);
-            if (std::fabs(hit.x) > 1 || std::fabs(hit.y) > 1) return 0;
-            cosTheta = std::fabs(lo.d.z);
+            if (std::fabs(hit.x) > 1 || std::fabs(hit.y) > 1) return false;
             break;
         }
         case Shape::Disk: {
-            Ray lo = worldToObject.TransformRay(r);
-            if (std::fabs(lo.d.z) < 1e-12) return 0;
-            double t = -lo.o.z / lo.d.z;
-            if (t <= 0) return 0;
+            if (std::fabs(lo.d.z) < 1e-12) return false;
+            t = -lo.o.z / lo.d.z;
             Point3 hit = lo(t);
-            if (LengthSquared(Vec3(hit.x, hit.y, 0)) > radius * radius) return 0;
-            cosTheta = std::fabs(lo.d.z);
+            if (LengthSquared(Vec3(hit.x, hit.y, 0)) > radius * radius) return false;
             break;
         }
         case Shape::Sphere: {
-            Ray lo = worldToObject.TransformRay(r);
-            double t = IntersectSphereRay(lo.o, lo.d, radius);
-            if (t <= 0) return 0;
-            cosTheta = std::fabs(Dot(lo.d, Normalize(lo(t))));
+            t = IntersectSphereRay(lo.o, lo.d, radius);
+            normal = Normalize(lo(t));
             break;
         }
     }
-    if (cosTheta < 1e-9) return 0;
-    double A = Area();
-    double dist2 = LengthSquared(SamplePoint(Point2(0.5, 0.5), nullptr) - ref);
-    // pdf_area -> pdf_solid_angle
-    double pdf = dist2 / (cosTheta * A);
-    if (!std::isfinite(pdf) || pdf <= 0) return 0;
-    return pdf;
+    if (t <= 1e-4 || t >= tMax) return false;
+    *tHit = t;
+    if (ns) *ns = objectToWorld.TransformNormal(normal);
+    return true;
 }
 
 double AreaLight::Area() const {
@@ -138,10 +135,14 @@ double AreaLight::Area() const {
         }
         case Shape::Disk: {
             Vec3 x = objectToWorld.TransformVector(Vec3(1, 0, 0));
-            return kPi * radius * radius * Length(x) * Length(x);
+            Vec3 y = objectToWorld.TransformVector(Vec3(0, 1, 0));
+            return kPi * radius * radius * Length(Cross(x, y));
         }
-        case Shape::Sphere:
-            return 4.0 * kPi * radius * radius;
+        case Shape::Sphere: {
+            // Uniform scale only: an ellipsoid needs a non-uniform area PDF.
+            double s = Length(objectToWorld.TransformVector(Vec3(1, 0, 0)));
+            return 4.0 * kPi * radius * radius * s * s;
+        }
     }
     return 0;
 }

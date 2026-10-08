@@ -6,13 +6,10 @@
 namespace cgr {
 
 double FrDielectric(double cosThetaI, double eta) {
-    // eta is the relative IOR (etaI / etaT). cosThetaI is measured against the
-    // normal on the side the incident ray is on.
-    cosThetaI = Clamp(cosThetaI, -1.0, 1.0);
-    if (cosThetaI < 0) {
-        eta = 1.0 / eta;
-        cosThetaI = -cosThetaI;
-    }
+    // The caller chooses the two media using the unflipped geometric normal.
+    // eta is etaT / etaI, so Snell's law divides sin^2(thetaI) by eta^2.
+    cosThetaI = Clamp(cosThetaI, 0.0, 1.0);
+    if (eta == 1.0) return 0.0;
     double sin2ThetaI = 1.0 - cosThetaI * cosThetaI;
     double sin2ThetaT = sin2ThetaI / (eta * eta);
     if (sin2ThetaT >= 1.0) return 1.0;  // total internal reflection
@@ -32,7 +29,7 @@ double FrDielectric(double cosThetaI, double eta) {
 Color Material::BlinnPhongSpecular(const Normal& n, Vec3 wo, Vec3 wi) const {
     if (specular.IsBlack()) return Color(0);
     Vec3 h = Normalize(wo + wi);
-    double cosThetaH = AbsDot(n, h);
+    double cosThetaH = std::max(0.0, Dot(n, h));
     if (cosThetaH <= 0) return Color(0);
     return specular * std::pow(cosThetaH, shininess);
 }
@@ -45,22 +42,19 @@ Color Material::PhongSpecular(const Normal& n, Vec3 wo, Vec3 wi) const {
 }
 
 Color Material::F(const Normal& n, Vec3 wo, Vec3 wi) const {
-    // Both directions are expected in the hemisphere around n (the integrators
-    // flip n to face wo before calling).
-    double cosTheta = Dot(n, wi);
-    if (cosTheta <= 0) return Color(0);
-    // Lambertian base: reflectance / pi.
-    Color f = reflectance * kInvPi;
-    if (!specular.IsBlack()) {
-        bool phong = (Type() == MaterialType::Phong);
-        double e = phong ? phongExponent : shininess;
-        // The lobe helpers return the raw cos^e term, so the normalising
-        // (e + 2) / (2 pi) factor is applied here to keep the lobe energy
-        // independent of the exponent.
-        Color lobe = phong ? PhongSpecular(n, wo, wi) : BlinnPhongSpecular(n, wo, wi);
-        f += lobe * ((e + 2.0) / (2.0 * kPi));
-    }
-    return f;
+    return F(n, wo, wi, DiffuseColor());
+}
+
+Color Material::F(const Normal& n, Vec3 wo, Vec3 wi, Color diffuse) const {
+    if (Dot(n, wi) <= 0 || Dot(n, wo) <= 0) return Color(0);
+    // Reserve ks of each channel's energy for the normalised Phong lobe;
+    // the diffuse term gets at most the remaining 1-ks. The cosine is applied
+    // by the integrator, not twice inside the BRDF.
+    Color ks = Clamp(specular, 0.0, 1.0);
+    Color kd = Clamp(diffuse, 0.0, 1.0) * (Color(1) - ks);
+    double e = std::max(0.0, Type() == MaterialType::Phong ? phongExponent : shininess);
+    double cosR = std::max(0.0, Dot(Reflect(wi, n), wo));
+    return kd * kInvPi + ks * ((e + 2.0) / (2.0 * kPi) * std::pow(cosR, e));
 }
 
 //

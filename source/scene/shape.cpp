@@ -82,12 +82,11 @@ Normal Sphere::NormalAt(const Point3& p) const { return Normalize(p); }
 
 Point2 Sphere::UV(const Point3& p, const Normal& n) const {
     (void)p;
-    // pbrt's spherical parameterisation.
-    double u = (n.x - n.z) / (2 - n.x - n.z);
-    double theta = std::atan2(n.y, n.x);
-    if (theta < 0) theta += 2 * kPi;
-    double v = theta / (2 * kPi);
-    return Point2(u, v);
+    // Longitude around +z and latitude from +z: equirectangular mapping.
+    double phi = std::atan2(n.y, n.x);
+    if (phi < 0) phi += 2 * kPi;
+    double theta = std::acos(Clamp(n.z, -1.0, 1.0));
+    return Point2(phi / (2 * kPi), theta / kPi);
 }
 
 //
@@ -118,8 +117,8 @@ bool Plane::Intersect(const Ray& r, double tMax, double* tHit,
     Ray rayObj = ToObject().TransformRay(r);
     Point3 pp = rayObj(*tHit);
     Normal nn(0, 0, 1);
-    // Two-sided: flip the geometric normal to face the ray.
-    if (Dot(nn, rayObj.d) > 0) nn = -nn;
+    // Keep the geometric orientation; integrators face-forward the shading
+    // normal separately, and dielectrics need ng to distinguish entry/exit.
     Transform t = ToWorld();
     hit->p = t.TransformPoint(pp);
     hit->n = t.TransformNormal(nn);
@@ -194,7 +193,6 @@ bool Triangle::Intersect(const Ray& r, double tMax, double* tHit,
     double b0 = 1 - b1 - b2;
 
     Normal ng = n;
-    if (Dot(ng, rayObj.d) > 0) ng = -ng;
     Normal ns = ng;
     if (hasVertexNormals) {
         ns = Normalize(sn[0] * b0 + sn[1] * b1 + sn[2] * b2);

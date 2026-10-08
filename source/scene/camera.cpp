@@ -6,9 +6,8 @@ namespace cgr {
 
 namespace {
 
-// Build the screen window from the film and the field of view. pbrt applies the
-// fov to the larger of the two resolution axes, which is why fov is described
-// as "horizontal or vertical" depending on the aspect ratio.
+// Legacy block scenes apply fov to the larger image axis. The standard PBRT
+// parser converts its smaller-axis FOV before configuring this screen window.
 void WindowFromFov(const Film& film, double fovDegrees, bool perspective,
                    double* uMin, double* uMax, double* vMin, double* vMax,
                    double* orthoScale) {
@@ -124,8 +123,10 @@ void Camera::ConfigureThinLens(double apertureRadius, double focusDistance,
 Vec3 Camera::CameraRight() const {
     // right = forward x up, so that a camera looking down -z with up = +y has
     // right = +x. (Using up x forward would mirror the image horizontally.)
-    Vec3 up(0, 1, 0);
-    if (std::fabs(Dot(forward, up)) > 0.999) up = Vec3(0, 0, 1);
+    Vec3 up = Normalize(setupUp);
+    if (LengthSquared(up) == 0) up = Vec3(0, 1, 0);
+    if (std::fabs(Dot(forward, up)) > 0.999)
+        up = std::fabs(forward.z) < 0.9 ? Vec3(0, 0, 1) : Vec3(1, 0, 0);
     return Normalize(Cross(forward, up));
 }
 
@@ -171,7 +172,8 @@ Ray Camera::GenerateRay(double sx, double sy, Point2 lensSample) const {
     double theta = 2.0 * kPi * lensSample.y;
     Vec3 offset = (right * std::cos(theta) + upv * std::sin(theta)) * r;
     Point3 lensOrigin = position + offset;
-    Point3 focusPoint = position + dir * focusDistance;
+    // Intersect the pinhole ray with the plane perpendicular to forward at D.
+    Point3 focusPoint = position + dir * (focusDistance / Dot(dir, forward));
     return Ray(lensOrigin, Normalize(focusPoint - lensOrigin));
 }
 

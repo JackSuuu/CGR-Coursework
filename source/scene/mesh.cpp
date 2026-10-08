@@ -17,10 +17,12 @@ void TriangleMesh::RecomputeNormals() {
     for (const auto& f : faces) {
         Point3 p0 = P[f.v[0]], p1 = P[f.v[1]], p2 = P[f.v[2]];
         // Area-weighted: the unnormalised cross product is twice the area.
-        Vec3 fn = 2.0 * Cross(p1 - p0, p2 - p0);
+        Vec3 fn = Cross(p1 - p0, p2 - p0);
         for (int i = 0; i < 3; ++i) N[f.v[i]] += fn;
     }
     for (auto& n : N) n = Normalize(n);
+    for (auto& f : faces)
+        for (int i = 0; i < 3; ++i) f.vn[i] = f.v[i];
 }
 
 std::vector<std::shared_ptr<Triangle>> TriangleMesh::BuildTriangles(
@@ -35,6 +37,7 @@ std::vector<std::shared_ptr<Triangle>> TriangleMesh::BuildTriangles(
         tri->e1 = tri->p[1] - tri->p[0];
         tri->e2 = tri->p[2] - tri->p[0];
         tri->n = Normalize(Cross(tri->e1, tri->e2));
+        tri->hasVertexNormals = true;
         for (int i = 0; i < 3; ++i) {
             if (!UVs.empty() && f.vt[i] >= 0 &&
                 f.vt[i] < static_cast<int>(UVs.size()))
@@ -42,9 +45,12 @@ std::vector<std::shared_ptr<Triangle>> TriangleMesh::BuildTriangles(
             else
                 tri->uv[i] = Point2(0, 0);
             if (!N.empty() && f.vn[i] >= 0 && f.vn[i] < static_cast<int>(N.size()))
-                tri->sn[i] = N[f.vn[i]];
+                tri->sn[i] = toWorld.TransformNormal(N[f.vn[i]]);
+            else {
+                tri->sn[i] = tri->n;
+                tri->hasVertexNormals = false;
+            }
         }
-        tri->hasVertexNormals = !N.empty();
         // Baked into world space, so the triangle's own transform is identity.
         tri->SetTransform(Transform());
         tris.push_back(tri);

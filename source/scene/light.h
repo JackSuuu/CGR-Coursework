@@ -109,6 +109,7 @@ class AreaLight : public Light {
                     Vec3* wi) const override;
     double Pdf(Point3 ref, Vec3 wi) const override;
     Point3 SamplePoint(Point2 uv, Normal* ns) const override;
+    bool IntersectRay(const Ray& ray, double tMax, double* tHit, Normal* ns) const;
     double Area() const override;
     std::string TypeName() const override { return "area"; }
     bool IsArea() const override { return true; }
@@ -116,6 +117,7 @@ class AreaLight : public Light {
     Shape shape = Shape::Rectangle;
     // Spherical area light radius (Shape::Sphere).
     double radius = 1.0;
+    int samples = 1; // light-surface samples per camera sample
 };
 
 }  // namespace cgr

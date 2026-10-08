@@ -140,7 +140,7 @@ class Triangle : public Shape {
     std::string TypeName() const override { return "triangle"; }
 
     Point3 p[3];
-    Point2 uv[3];
+    Point2 uv[3] = {Point2(0, 0), Point2(1, 0), Point2(0, 1)};
     Normal sn[3];  // per-vertex shading normals (for smooth meshes)
     Vec3 e1, e2;
     Normal n;

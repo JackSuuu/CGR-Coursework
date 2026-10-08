@@ -23,12 +23,12 @@ Geometry: textured UV coordinate generation for all three primitives
 Triangle meshes: .obj loader (v/vt/f), built with the standard library only
 Mesh per-vertex normals: read from OBJ vn records, or recomputed as the area-weighted average of the adjacent face normals when the file has none
 Mesh UV coordinates: interpolated per pixel from the OBJ vt indices (v/vt/vn triples and negative indices supported)
-Textures on mesh surfaces: interpolated UV lookup (checker.ppm)
+Textures on mesh surfaces: interpolated UV lookup, explicit vt/vn in uv_geodesic.obj and display_box.obj; coarse checker/paper PPM textures
 Area light sources: emissive rectangle (12-number four-corner and 6-number two-corner forms)
 Area light sources: emissive disc and emissive sphere (parser accepts "rectangle", "disk", "sphere")
 Soft shadows: shadow rays are aimed at uniformly sampled points on the light surface
-Light sampling density configurable in the scene file ("integer samples")
-Phong BRDF: cosine-weighted diffuse term plus normalised specular lobe (energy conserving)
+Light sampling density configurable: Integrator "integer spp" and Light "integer samples", both averaged
+Phong BRDF: Lambertian diffuse plus normalised Phong lobe, per-channel diffuse/specular energy budget; cosine applied by integrator
 Depth of field: thin-lens camera, rays jittered on the lens aperture and gathered at the focal plane
 Aperture radius and focal distance configurable in the scene file ("float apertureradius", "float focusdistance"/"focaldistance")
 Reinhard tone mapping applied to the HDR image before it is written
@@ -36,7 +36,9 @@ Reinhard mode selectable per channel or on luminance ("string tonemap"), per cha
 White point configurable in the scene file ("float whitepoint")
 
 ## Scene format / pipeline
-PBRT-subset parser: Film, Camera (lookat, fov, aperture, focus), Integrator (whitted/distributed, maxdepth, bf, spp), Include-free directives, Material, Texture, Shape, Light, Transform tokens
+PBRT-subset parser: legacy named block syntax plus standard Film/Sampler/Integrator/LookAt/Camera/WorldBegin/End/Material/NamedMaterial/Texture/LightSource/AreaLightSource/Shape/Translate/Scale/Rotate/AttributeBegin/End statements
+Standard PBRT geometry subset: spheres and inline trianglemeshes with P/indices/uv/N arrays; OBJ files remain available in the named block syntax
+Parser limitation: no general instances/Includes/animation; standard path integrator warned and approximated as direct-light DRT; standard area emitters limited to spheres/four-corner meshes for explicit sampling
 Integrator chosen by the "Integrator" directive in the scene file
 Output images written to output/ as PNG (default) or PPM ("-f ppm")
 A .log file is written next to every output image
@@ -48,6 +50,7 @@ Image statistics in the log: mean, min, max, standard deviation per channel
 Command line: -o output directory, -n output name, -f image format, -q quiet, -h help, -v version
 
 ## NOT YET IMPLEMENTED at this checkpoint
+Diffuse indirect lighting / branching-factor parameter study (Module 2 and later)
 Supersampling / pixel jitter antialiasing (Module 2)
 Orthographic camera scenes and the field-of-view study (Module 2)
 Regular-grid and Halton samplers (Module 2)

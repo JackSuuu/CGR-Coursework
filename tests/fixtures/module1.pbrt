@@ -1,0 +1,11 @@
+# Parser/geometry fixture: hand-checkable values, not a report scene.
+Integrator "distributed" { "integer maxdepth" 5 "integer spp" 8 }
+Film "test" { "integer xresolution" 40 "integer yresolution" 30 }
+Camera "cam" { "lookat" 0 0 5  0 0 0  0 1 0 "float fov" 40 }
+Material "red" { "blinnphong" "reflectance" [0.2 0.3 0.4] "shininess" 17 }
+Material "gloss" { "phong" "reflectance" [0.4 0.5 0.6] "specularreflectance" [0.7 0.6 0.5] "float phong" 23 }
+Material "glass" { "glass" "reflectance" [1 1 1] "float eta" 1.5 }
+Shape "scaled" { "sphere" [1] "scale" 2 2 2 "material" "red" }
+Shape "mesh" { "trianglemesh" "no_normals.obj" "translate" 4 0 0 "scale" 2 2 2 "material" "gloss" }
+Light "panel" { "rectangle" [-1 -1 -2  1 -1 -2  1 1 -2  -1 1 -2] "radiance" [4 5 6] "integer samples" 3 }
+Light "disc" { "disk" [2] "translate" 0 0 -4 "radiance" [1 1 1] }

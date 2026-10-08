@@ -41,7 +41,7 @@ class Camera {
                            const Point3& pos, Point3 look, Vec3 up, const Film& film);
 
     // Generate the primary ray for the continuous film position (sx, sy) in
-    // [0,1]x[0,1] with the lens sample (lensU, lensV) in the unit disk.
+    // [0,1]x[0,1] with a lens sample in the unit square, mapped onto the disk.
     Ray GenerateRay(double sx, double sy, Point2 lensSample) const;
 
     // Camera basis in world space.

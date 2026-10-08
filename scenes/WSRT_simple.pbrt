@@ -22,16 +22,16 @@ Film "simple" {
 }
 
 Camera "cam" {
-    "lookat" 0 1.6 9.5   0 1.0 0   0 1 0
-    "float fov" 38
+    "lookat" -0.5 2.5 11.5   -0.5 1.0 0   0 1 0
+    "float fov" 58
 }
 
 # ---- materials ---------------------------------------------------------
 Material "floor" {
     "diffuse" "reflectance" [ 0.75 0.72 0.68 ]
-    "texture" "diffuse" "textures/checker.ppm"
-    "float uscale" 4
-    "float vscale" 4
+    "texture" "diffuse" "textures/broad_checker.ppm"
+    "float uscale" 0.55
+    "float vscale" 0.55
 }
 Material "redBall" {
     "blinnphong" "reflectance" [ 0.65 0.10 0.10 ] "specularreflectance" [ 0.9 0.9 0.9 ] "shininess" 120
@@ -47,8 +47,8 @@ Material "glass" {
 }
 Material "texturedBall" {
     "blinnphong" "reflectance" [ 0.7 0.7 0.7 ] "specularreflectance" [ 0.25 0.25 0.25 ] "shininess" 40
-    "texture" "diffuse" "textures/checker.ppm"
-    "float uscale" 2
+    "texture" "diffuse" "textures/broad_checker.ppm"
+    "float uscale" 1
     "float vscale" 1
 }
 Material "triMat" {

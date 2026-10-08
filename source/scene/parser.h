@@ -1,7 +1,11 @@
 #pragma once
 // pbrt scene-file reader.
 //
-// The grammar handled here is the pbrt-v3/v4 subset the spec asks for:
+// Supported standard PBRT subset: Film, Sampler, Integrator, LookAt, Camera,
+// WorldBegin/End, Material/NamedMaterial, PPM imagemap Texture, LightSource
+// (point), AreaLightSource (diffuse), Shape (sphere/inline trianglemesh),
+// Translate/Scale/Rotate, Identity and AttributeBegin/End.
+// The original named block syntax is also accepted:
 //
 //   <directive> [ "name" ] { <tokens> }      "string" { ... }
 //   Shape "name" { "type" ... [ <transform> ] "material" [ ... ] }
@@ -18,7 +22,7 @@
 namespace cgr {
 
 struct ParseResult {
-    bool ok = false;      // false only if the file itself was unreadable
+    bool ok = false;      // false if the file is unreadable or parsing has errors
     Scene scene;
     int nWarnings = 0;
     int nErrors = 0;
