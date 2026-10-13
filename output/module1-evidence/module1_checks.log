@@ -1,0 +1,64 @@
+PASS normal-incidence mirror reflects outward
+PASS mirror preserves tangent, reverses normal component
+EVIDENCE mirror.tangent_x actual=0.707106781187 expected=0.707106781187 abs_error=0
+EVIDENCE mirror.normal_y actual=0.707106781187 expected=0.707106781187 abs_error=0
+PASS glass normal incidence continues forward
+PASS Snell: air to glass at 30 degrees
+EVIDENCE snell.air_glass_30.sin_theta_t actual=0.333333333333 expected=0.333333333333 abs_error=5.55111512313e-17
+PASS parallel interfaces restore the incident direction
+PASS glass to air at 60 degrees has total internal reflection
+PASS Fresnel normal-incidence air/glass reflectance = 4 percent
+PASS Fresnel TIR reflectance = 1
+EVIDENCE fresnel.normal_incidence.R actual=0.04 expected=0.04 abs_error=6.93889390391e-18
+EVIDENCE fresnel.glass_air_60.R actual=1 expected=1 abs_error=0
+PASS identical media have no Fresnel reflection, even at grazing incidence
+PASS scaled sphere keeps world t=3 and world hit z=2
+PASS scaled sphere behind a shadow segment is not an occluder
+PASS inverse-transpose normal remains perpendicular and unit length
+PASS scaled plane preserves world t
+PASS scaled triangle intersection and barycentric UV
+PASS sphere north pole latitude
+PASS sphere equator longitude and latitude
+PASS different lens origins converge on the same planar focus point
+EVIDENCE camera.planar_focus.point_distance actual=0 expected=0 abs_error=0
+PASS camera honours supplied up vector
+PASS LookAt maps camera position to camera-space origin
+EVIDENCE phong.hemisphere view_angle_degrees=0 actual=0.999765054384 upper_bound=1.0001 grid=256x256
+EVIDENCE phong.hemisphere view_angle_degrees=45 actual=0.765690070758 upper_bound=1.0001 grid=256x256
+EVIDENCE phong.hemisphere view_angle_degrees=80 actual=0.360274220793 upper_bound=1.0001 grid=256x256
+PASS Phong hemispherical reflected energy <= incident energy at 0/45/80 degrees
+PASS black diffuse texel yields zero diffuse BRDF
+PASS extended Reinhard maps white point to display white
+PASS Reinhard W=1 identity (not an implementation failure)
+EVIDENCE reinhard.c4_W4 actual=1 expected=1 abs_error=0
+EVIDENCE reinhard.c0_5_W1 actual=0.5 expected=0.5 abs_error=0
+PASS report geodesic mesh has explicit per-face UVs and per-vertex normals
+PASS report mesh corners reference actual UV and normal data
+PASS generated mesh normals receive per-corner indices
+PASS mesh vertex normals transformed with inverse transpose
+PASS fixture parses without errors/warnings
+PASS material type does not swallow first reflectance parameter
+PASS Blinn-Phong type and float phong exponent parsed
+PASS OBJ scene translate/scale applied
+PASS rectangle samples actual corners, area, configurable density
+PASS area-to-solid-angle PDF = distance squared / (area*cos)
+EVIDENCE rectangle.fixture.area actual=4 expected=4 abs_error=0
+EVIDENCE rectangle.fixture.solid_angle_pdf actual=1 expected=1 abs_error=0
+PASS disc scene transform applied
+PASS missing texture / unknown primitive / unsupported directive produce diagnostics
+PASS standard PBRT syntax: statements, scopes and multiline trianglemesh arrays
+PASS standard PBRT sampler and named spectrum texture
+PASS standard PBRT Translate/Scale scope affects sphere
+PASS standard PBRT landscape FOV applies to smaller (vertical) axis
+PASS standard PBRT point light and four-corner diffuse area emitter
+PASS WSRT mirror actually reflects background, not recursion-limit white
+PASS DRT mirror actually reflects background
+PASS WSRT depth termination contributes zero
+PASS WSRT glass includes both Fresnel paths with radiance eta scaling
+PASS DRT glass includes both Fresnel paths
+PASS black texture wrap preserves in-bounds texels, blacks only outside
+PASS WSRT/DRT diffuse light equals rho/pi * I/r^2, no self-shadow
+PASS occluder between surface and light blocks direct illumination
+PASS inside glass ray selects exit medium and reciprocal eta scaling
+PASS area emitter is visible to camera and recursive rays
+50 checks, 0 failures

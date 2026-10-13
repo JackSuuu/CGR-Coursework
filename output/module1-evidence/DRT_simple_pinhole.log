@@ -1,0 +1,21 @@
+[INFO ] CGR26_renderer starting
+[INFO ] command line: scene='/Users/jacksu/Desktop/CGR/cw/scenes/DRT_simple_pinhole.pbrt' output='/Users/jacksu/Desktop/CGR/cw/output/module1-evidence'
+[INFO ] parsing '/Users/jacksu/Desktop/CGR/cw/scenes/DRT_simple_pinhole.pbrt' (88 lines)
+[INFO ] scene starts with one default diffuse material
+[INFO ] integrator 'distributed': maxdepth=4 BF=4 spp=32 sampler=uniform
+[INFO ] camera: perspective, fov=46.000000 aperture=0.000000 focus=1.000000 pos=(0.900000,2.400000,9.000000) look=(0.900000,1.000000,0.000000) fwd=(0.000000,-0.153707,-0.988116)
+[INFO ] loaded texture 'textures/wood.ppm' (64x64)
+[INFO ] loaded texture 'textures/broad_checker.ppm' (32x32)
+[INFO ] loaded mesh 'meshes/uv_geodesic.obj': 320 triangles
+[INFO ] loaded mesh 'meshes/display_box.obj': 12 triangles
+[INFO ] area light (rectangle) area=25.200000
+[INFO ] area light (rectangle) area=5.750000
+[INFO ] parsed scene: 336 shapes, 2 lights, 6 materials, integrator='distributed'
+[INFO ] integrator: distributed
+[INFO ] DRT: 600x400, maxDepth=4 BF=4 spp=32 sampler=uniform lensRadius=0.000000 focus=1.000000
+[INFO ] DRT frame time: 60.952448 s
+[INFO ] wrote /Users/jacksu/Desktop/CGR/cw/output/module1-evidence/DRT_simple_pinhole.png (600x400)
+[INFO ] image mean=(0.189025, 0.168532, 0.156661) min=0.000000 max=0.972341 stddev=(0.147360, 0.153189, 0.178495)
+[INFO ]   render            60.9524 s
+[INFO ] parse warnings=0 parse errors=0
+[INFO ] CGR26_renderer finished

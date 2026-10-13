@@ -3,6 +3,8 @@ build/
 output/CGR26_renderer
 *.o
 *.d
+__pycache__/
+*.py[cod]
 
 # Images/logs produced by the student test suite are reproducible from
 # studentTests/runAllTests.sh, so only the reported images in output/ are

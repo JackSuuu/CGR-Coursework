@@ -1,0 +1,46 @@
+[INFO ] CGR26_renderer starting
+[INFO ] command line: scene='/Users/jacksu/Desktop/CGR/cw/scenes/WSRT_creative.pbrt' output='/Users/jacksu/Desktop/CGR/cw/output/module1-evidence'
+[INFO ] parsing '/Users/jacksu/Desktop/CGR/cw/scenes/WSRT_creative.pbrt' (64 lines)
+[INFO ] scene starts with one default diffuse material
+[INFO ] integrator 'whitted': maxdepth=10 BF=4 spp=4 sampler=uniform
+[INFO ] camera: perspective, fov=46.000000 aperture=0.000000 focus=1.000000 pos=(4.400000,4.200000,8.200000) look=(-0.100000,0.900000,-0.050000) fwd=(-0.451805,-0.331324,-0.828309)
+[INFO ] loaded texture 'textures/cafe_marble.ppm' (128x128)
+[INFO ] loaded texture 'textures/wood.ppm' (64x64)
+[INFO ] loaded texture 'textures/laptop_screen.ppm' (128x80)
+[INFO ] loaded texture 'textures/laptop_keys.ppm' (128x64)
+[INFO ] loaded texture 'textures/cafe_label.ppm' (48x32)
+[INFO ] loaded mesh 'meshes/display_box.obj': 12 triangles
+[INFO ] loaded mesh 'meshes/display_box.obj': 12 triangles
+[INFO ] loaded mesh 'meshes/display_box.obj': 12 triangles
+[INFO ] loaded mesh 'meshes/display_box.obj': 12 triangles
+[INFO ] loaded mesh 'meshes/display_box.obj': 12 triangles
+[INFO ] loaded mesh 'meshes/display_box.obj': 12 triangles
+[INFO ] loaded mesh 'meshes/cafe_rack_ring.obj': 160 triangles
+[INFO ] loaded mesh 'meshes/cafe_rack_ring.obj': 160 triangles
+[INFO ] loaded mesh 'meshes/cafe_rod.obj': 32 triangles
+[INFO ] loaded mesh 'meshes/cafe_rod.obj': 32 triangles
+[INFO ] loaded mesh 'meshes/cafe_rod.obj': 32 triangles
+[INFO ] loaded mesh 'meshes/cafe_rod.obj': 32 triangles
+[INFO ] loaded mesh 'meshes/cafe_rod.obj': 32 triangles
+[INFO ] loaded mesh 'meshes/cafe_rod.obj': 32 triangles
+[INFO ] loaded mesh 'meshes/cafe_rod.obj': 32 triangles
+[INFO ] loaded mesh 'meshes/cafe_bottle.obj': 144 triangles
+[INFO ] loaded mesh 'meshes/cafe_rod.obj': 32 triangles
+[INFO ] loaded mesh 'meshes/cafe_label_band.obj': 24 triangles
+[INFO ] loaded mesh 'meshes/cafe_bottle.obj': 144 triangles
+[INFO ] loaded mesh 'meshes/cafe_rod.obj': 32 triangles
+[INFO ] loaded mesh 'meshes/cafe_label_band.obj': 24 triangles
+[INFO ] loaded mesh 'meshes/cafe_bottle.obj': 144 triangles
+[INFO ] loaded mesh 'meshes/cafe_rod.obj': 32 triangles
+[INFO ] loaded mesh 'meshes/cafe_label_band.obj': 24 triangles
+[INFO ] point light at (-3, 7, 4) I=(180, 145, 105)
+[INFO ] point light at (5, 4, 1) I=(45, 58, 80)
+[INFO ] parsed scene: 1230 shapes, 2 lights, 15 materials, integrator='whitted'
+[INFO ] integrator: whitted
+[INFO ] WSRT: 960x640, maxDepth=10, 1 sample/pixel (no antialiasing)
+[INFO ] WSRT frame time: 19.534114 s
+[INFO ] wrote /Users/jacksu/Desktop/CGR/cw/output/module1-evidence/WSRT_creative.png (960x640)
+[INFO ] image mean=(0.328395, 0.272568, 0.218524) min=0.000000 max=1.000000 stddev=(0.325503, 0.306482, 0.296085)
+[INFO ]   render            19.5341 s
+[INFO ] parse warnings=0 parse errors=0
+[INFO ] CGR26_renderer finished

@@ -1,0 +1,5 @@
+scene,resolution,spp,max_depth,primitives,render_seconds
+WSRT_simple,900x560,1,8,8,0.160064
+WSRT_creative,960x640,1,10,1230,19.534114
+DRT_simple,600x400,32,4,336,64.005217
+DRT_creative,480x320,24,5,1230,108.098545

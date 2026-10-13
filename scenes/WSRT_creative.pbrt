@@ -1,135 +1,63 @@
-# WSRT_creative -- the WSRT pushed a bit further than WSRT_simple.
-# Provisional tabletop optics still life; the student must provide a real
-# inspiration photograph and adapt/justify the arrangement before submission.
-#
-# Features available for the student's own image annotations:
-#   1. a textured diffuse floor with hard shadows
-#   2. Fresnel reflection/refraction through a closed, elongated glass object
-#   3. multiple nested mirrors (the two chrome spheres reflect each other)
-#   4. two point lights with different colours -> coloured lighting/highlights
-#   5. UV texture mapping on the diffuse floor
-#   6. shadow rays through the "arch" of triangles
-#   7. recursive mirror-in-mirror paths, bounded by maxdepth
-
-Integrator "whitted" {
-    "integer maxdepth" 12
-}
-
-Film "creative" {
-    "integer xresolution" 960
-    "integer yresolution" 600
-}
-
-Camera "cam" {
-    "lookat" 0 2.2 11.0   0 1.4 0   0 1 0
-    "float fov" 48
-}
-
-# ---- materials ---------------------------------------------------------
-Material "marble" {
-    "diffuse" "reflectance" [ 0.85 0.83 0.80 ]
-    "texture" "diffuse" "textures/wood.ppm"
-    "float uscale" 0.6
-    "float vscale" 0.6
-}
-Material "chromeA" {
-    "mirror" "reflectance" [ 1.0 0.97 0.92 ]
-}
-Material "chromeB" {
-    "mirror" "reflectance" [ 0.90 0.93 1.00 ]
-}
-Material "glassSlab" {
-    "dielectric" "reflectance" [ 1 1 1 ] "float eta" 1.60
-}
-Material "rubyBall" {
-    "phong" "reflectance" [ 0.70 0.05 0.08 ] "specularreflectance" [ 1.0 0.9 0.9 ] "float phong" 90
-}
-Material "goldBall" {
-    "blinnphong" "reflectance" [ 0.85 0.65 0.20 ] "specularreflectance" [ 1 1 1 ] "float shininess" 220
-}
-Material "tealBall" {
-    "blinnphong" "reflectance" [ 0.10 0.45 0.48 ] "specularreflectance" [ 0.6 0.7 0.7 ] "float shininess" 70
-}
-Material "arch" {
-    "blinnphong" "reflectance" [ 0.55 0.55 0.60 ] "specularreflectance" [ 0.3 0.3 0.3 ] "float shininess" 25
-}
-Material "paper" { "blinnphong" "reflectance" [ 0.9 0.85 0.72 ] "specularreflectance" [ 0.02 0.02 0.02 ] "shininess" 15 "texture" "diffuse" "textures/paper.ppm" }
-Material "bookCover" { "blinnphong" "reflectance" [ 0.12 0.24 0.38 ] "specularreflectance" [ 0.15 0.15 0.15 ] "shininess" 35 }
-Material "backdrop" { "diffuse" "reflectance" [ 0.16 0.22 0.28 ] }
-
-# ---- geometry ----------------------------------------------------------
-# Marble floor. pbrt planes are xy with normal +z, so rotate -90 about x.
-Shape "floor" {
-    "plane" [ 0 0 0 ]
-    "rotate" 1 0 0 -90
-    "material" "marble"
-}
-Shape "backdrop" { "plane" [ 0 0 0 ] "translate" 0 0 -6 "material" "backdrop" }
-Shape "bookPages" { "trianglemesh" "meshes/display_box.obj" "translate" 1.1 0.04 -2.4 "scale" 2.15 0.30 1.45 "material" "paper" }
-Shape "bookBottom" { "trianglemesh" "meshes/display_box.obj" "translate" 1.1 0 -2.4 "scale" 2.30 0.04 1.60 "material" "bookCover" }
-Shape "bookTop" { "trianglemesh" "meshes/display_box.obj" "translate" 1.1 0.34 -2.4 "scale" 2.30 0.04 1.60 "material" "bookCover" }
-
-# 1/2. Two chrome balls facing each other: each shows the other, which is what
-# makes the recursion visible. The glass between them refracts the background.
-Shape "chromeLeft" {
-    "sphere" [ 1.15 ]
-    "translate" -2.5 1.15 1.0
-    "material" "chromeA"
-}
-Shape "chromeRight" {
-    "sphere" [ 1.15 ]
-    "translate" 2.5 1.15 -1.0
-    "material" "chromeB"
-}
-
-# Closed dielectric geometry has a well-defined entry and exit surface.
-Shape "slab" {
-    "sphere" [ 0.75 ]
-    "translate" 0 1.35 2.0
-    "scale" 0.6 1.8 0.8
-    "material" "glassSlab"
-}
-
-# Coloured surfaces with Blinn-Phong highlights in the WSRT.
-Shape "ruby" {
-    "sphere" [ 0.85 ]
-    "translate" -0.9 0.85 -2.4
-    "material" "rubyBall"
-}
-Shape "gold" {
-    "sphere" [ 0.85 ]
-    "translate" 1.1 1.23 -2.4
-    "material" "goldBall"
-}
-Shape "teal" {
-    "sphere" [ 0.55 ]
-    "translate" -3.6 0.55 -1.6
-    "material" "tealBall"
-}
-
-# 6. An arch of four triangles; the key light passes through the opening and
-# casts a shaped patch on the floor behind it.
-Shape "archL" {
-    "triangle" [ -4.6 0 -1.2   -4.6 2.6 -1.2   -3.9 2.6 -1.2 ]
-    "material" "arch"
-}
-Shape "archR" {
-    "triangle" [ -3.3 0 -1.2   -3.3 2.6 -1.2   -4.0 2.6 -1.2 ]
-    "material" "arch"
-}
-Shape "archTop" {
-    "triangle" [ -4.6 2.6 -1.2   -4.6 3.2 -1.2   -3.3 3.2 -1.2 ]
-    "material" "arch"
-}
-
-# ---- lights ------------------------------------------------------------
-# 4. A warm key and a cool fill. The WSRT traces one shadow ray per light, so
-# the two shadows stay hard-edged; area-light soft shadows are a DRT feature.
-Light "key" {
-    "point" [ -5.0 7.0 6.0 ]
-    "intensity" [ 150 130 105 ]
-}
-Light "fill" {
-    "point" [ 5.5 3.5 4.5 ]
-    "intensity" [ 45 55 80 ]
-}
+# Photo-inspired creative cafe scene.
+# Reference: photograph/cgr_ref_img.jpg (user-provided original).
+# Laptop, marble inset, chrome condiment rack, capped bottles and green chairs.
+# Geometry/labels are stylised; screen texture is procedural, not a photo crop.
+# Broad polished tray is an artistic addition to make bottle reflections visible.
+# WSRT uses point lights; DRT uses area lights and independent lens/light samples.
+Integrator "whitted" { "integer maxdepth" 10 }
+Film "cafe" { "integer xresolution" 960 "integer yresolution" 640 }
+Camera "cam" { "lookat" 4.4 4.2 8.2  -0.1 0.9 -0.05  0 1 0 "float fov" 46 }
+Material "marble" { "blinnphong" "reflectance" [ 0.95 0.9 0.8 ] "specularreflectance" [ 0.05 0.05 0.05 ] "shininess" 60 "texture" "diffuse" "textures/cafe_marble.ppm" }
+Material "walnut" { "blinnphong" "reflectance" [ 0.6 0.38 0.22 ] "specularreflectance" [ 0.08 0.08 0.08 ] "shininess" 35 "texture" "diffuse" "textures/wood.ppm" }
+Material "aluminium" { "blinnphong" "reflectance" [ 0.54 0.44 0.33 ] "specularreflectance" [ 0.3 0.3 0.3 ] "shininess" 100 }
+Material "bezel" { "blinnphong" "reflectance" [ 0.025 0.028 0.035 ] "specularreflectance" [ 0.12 0.12 0.12 ] "shininess" 90 }
+Material "display" { "blinnphong" "reflectance" [ 1 1 1 ] "specularreflectance" [ 0.025 0.025 0.025 ] "shininess" 30 "texture" "diffuse" "textures/laptop_screen.ppm" "emission" [ 0.12 0.15 0.2 ] }
+Material "keyboard" { "blinnphong" "reflectance" [ 0.9 0.9 0.9 ] "specularreflectance" [ 0.08 0.08 0.08 ] "shininess" 50 "texture" "diffuse" "textures/laptop_keys.ppm" }
+Material "chrome" { "mirror" "reflectance" [ 0.91 0.92 0.93 ] }
+Material "amberGlass" { "dielectric" "reflectance" [ 0.99 0.96 0.88 ] "float eta" 1.5 }
+Material "brownSauce" { "blinnphong" "reflectance" [ 0.28 0.045 0.022 ] "specularreflectance" [ 0.15 0.15 0.15 ] "shininess" 70 }
+Material "mustard" { "blinnphong" "reflectance" [ 0.7 0.43 0.06 ] "specularreflectance" [ 0.12 0.12 0.12 ] "shininess" 60 }
+Material "cap" { "blinnphong" "reflectance" [ 0.96 0.9 0.72 ] "specularreflectance" [ 0.12 0.12 0.12 ] "shininess" 45 }
+Material "label" { "blinnphong" "reflectance" [ 0.9 0.9 0.9 ] "specularreflectance" [ 0.015 0.015 0.015 ] "shininess" 20 "texture" "diffuse" "textures/cafe_label.ppm" }
+Material "upholstery" { "blinnphong" "reflectance" [ 0.22 0.31 0.075 ] "specularreflectance" [ 0.04 0.04 0.04 ] "shininess" 20 }
+Material "wall" { "blinnphong" "reflectance" [ 0.3 0.17 0.085 ] "specularreflectance" [ 0.01 0.01 0.01 ] "shininess" 10 }
+Shape "tableFrame" { "trianglemesh" "meshes/display_box.obj" "translate" 0 -0.18 0 "scale" 9.0 0.16 6.0 "material" "walnut" }
+Shape "marbleInset" { "trianglemesh" "meshes/display_box.obj" "translate" 0 -0.15 0 "scale" 8.5 0.15 5.5 "material" "marble" }
+Shape "floor" { "plane" [0 0 0] "translate" 0 -1.2 0 "rotate" 1 0 0 -90 "material" "walnut" }
+Shape "wall" { "plane" [0 0 0] "translate" 0 0 -7 "material" "wall" }
+Shape "laptopBase" { "trianglemesh" "meshes/display_box.obj" "translate" 1.1 0.05 0.2 "scale" 3.75 0.14 2.45 "material" "aluminium" }
+Shape "screenFrame" { "trianglemesh" "meshes/display_box.obj" "translate" 1.1 0.24 -0.95 "rotate" 1 0 0 -12 "scale" 3.75 2.5 0.1 "material" "bezel" }
+Shape "screenA" { "triangle" [ -1.675 0 0 1.675 0 0 1.675 2.12 0 ] "translate" 1.1 0.45 -0.875 "rotate" 1 0 0 -12 "uv" [ 0 1 1 1 1 0 ] "material" "display" }
+Shape "screenB" { "triangle" [ -1.675 0 0 1.675 2.12 0 -1.675 2.12 0 ] "translate" 1.1 0.45 -0.875 "rotate" 1 0 0 -12 "uv" [ 0 1 1 0 0 0 ] "material" "display" }
+Shape "keysA" { "triangle" [ -1.6 0 0 1.6 0 0 1.6 1.04 0 ] "translate" 1.1 0.195 0.20 "rotate" 1 0 0 -90 "uv" [ 0 1 1 1 1 0 ] "material" "keyboard" }
+Shape "keysB" { "triangle" [ -1.6 0 0 1.6 1.04 0 -1.6 1.04 0 ] "translate" 1.1 0.195 0.20 "rotate" 1 0 0 -90 "uv" [ 0 1 1 0 0 0 ] "material" "keyboard" }
+Shape "trackpadBorder" { "trianglemesh" "meshes/display_box.obj" "translate" 1.1 0.191 0.775 "scale" 1.46 0.005 0.73 "material" "bezel" }
+Shape "trackpadA" { "triangle" [ -0.7 0 0 0.7 0 0 0.7 0.65 0 ] "translate" 1.1 0.198 1.10 "rotate" 1 0 0 -90 "uv" [ 0 1 1 1 1 0 ] "material" "aluminium" }
+Shape "trackpadB" { "triangle" [ -0.7 0 0 0.7 0.65 0 -0.7 0.65 0 ] "translate" 1.1 0.198 1.10 "rotate" 1 0 0 -90 "uv" [ 0 1 1 0 0 0 ] "material" "aluminium" }
+Shape "trayBase" { "trianglemesh" "meshes/display_box.obj" "translate" -2.65 0.015 0.8 "scale" 3.28 0.09 2.92 "material" "bezel" }
+Shape "polishedTrayA" { "triangle" [ -1.6 0 0 1.6 0 0 1.6 2.84 0 ] "translate" -2.65 0.115 2.22 "rotate" 1 0 0 -90 "uv" [ 0 1 1 1 1 0 ] "material" "chrome" }
+Shape "polishedTrayB" { "triangle" [ -1.6 0 0 1.6 2.84 0 -1.6 2.84 0 ] "translate" -2.65 0.115 2.22 "rotate" 1 0 0 -90 "uv" [ 0 1 1 0 0 0 ] "material" "chrome" }
+Shape "rackLower" { "trianglemesh" "meshes/cafe_rack_ring.obj" "translate" -2.6 0.14 0.25 "material" "chrome" }
+Shape "rackUpper" { "trianglemesh" "meshes/cafe_rack_ring.obj" "translate" -2.6 0.70 0.25 "material" "chrome" }
+Shape "rackPost0" { "trianglemesh" "meshes/cafe_rod.obj" "translate" -3.35 0.10 0.1 "scale" 0.023 0.84 0.023 "material" "chrome" }
+Shape "rackPost1" { "trianglemesh" "meshes/cafe_rod.obj" "translate" -1.85 0.10 0.1 "scale" 0.023 0.84 0.023 "material" "chrome" }
+Shape "rackPost2" { "trianglemesh" "meshes/cafe_rod.obj" "translate" -3.0 0.10 0.7 "scale" 0.023 0.84 0.023 "material" "chrome" }
+Shape "rackPost3" { "trianglemesh" "meshes/cafe_rod.obj" "translate" -2.2 0.10 0.7 "scale" 0.023 0.84 0.023 "material" "chrome" }
+Shape "handlePost0" { "trianglemesh" "meshes/cafe_rod.obj" "translate" -3.42 0.15 -0.12 "scale" 0.024 1.35 0.024 "material" "chrome" }
+Shape "handlePost1" { "trianglemesh" "meshes/cafe_rod.obj" "translate" -1.78 0.15 -0.12 "scale" 0.024 1.35 0.024 "material" "chrome" }
+Shape "rackHandle" { "trianglemesh" "meshes/cafe_rod.obj" "translate" -3.42 1.50 -0.12 "rotate" 0 0 1 -90 "scale" 0.024 1.64 0.024 "material" "chrome" }
+Shape "amberBottle" { "trianglemesh" "meshes/cafe_bottle.obj" "translate" -2.88 0.15 -0.02 "scale" 0.85 1.0 0.85 "material" "amberGlass" }
+Shape "amberBottleCap" { "trianglemesh" "meshes/cafe_rod.obj" "translate" -2.88 1.5499999999999998 -0.02 "scale" 0.09519999999999999 0.19 0.09519999999999999 "material" "cap" }
+Shape "amberBottleLabel" { "trianglemesh" "meshes/cafe_label_band.obj" "translate" -2.88 0.51 -0.02 "scale" 0.22695 0.43 0.22695 "material" "label" }
+Shape "sauceBottle" { "trianglemesh" "meshes/cafe_bottle.obj" "translate" -2.26 0.15 0.05 "scale" 0.9 0.82 0.9 "material" "brownSauce" }
+Shape "sauceBottleCap" { "trianglemesh" "meshes/cafe_rod.obj" "translate" -2.26 1.2979999999999998 0.05 "scale" 0.1008 0.1558 0.1008 "material" "cap" }
+Shape "sauceBottleLabel" { "trianglemesh" "meshes/cafe_label_band.obj" "translate" -2.26 0.44519999999999993 0.05 "scale" 0.2403 0.35259999999999997 0.2403 "material" "label" }
+Shape "mustardBottle" { "trianglemesh" "meshes/cafe_bottle.obj" "translate" -2.58 0.15 0.57 "scale" 0.8 0.67 0.8 "material" "mustard" }
+Shape "mustardBottleCap" { "trianglemesh" "meshes/cafe_rod.obj" "translate" -2.58 1.0879999999999999 0.57 "scale" 0.08960000000000001 0.1273 0.08960000000000001 "material" "cap" }
+Shape "mustardBottleLabel" { "trianglemesh" "meshes/cafe_label_band.obj" "translate" -2.58 0.3912 0.57 "scale" 0.2136 0.2881 0.2136 "material" "label" }
+Shape "leftChairBack" { "sphere" [1] "translate" -2.8 0.70 -3.8 "scale" 1.05 0.72 0.16 "material" "upholstery" }
+Shape "leftChairSeat" { "sphere" [1] "translate" -2.8 -0.45 -3.4 "scale" 1.05 0.12 0.7 "material" "upholstery" }
+Shape "rightChairBack" { "sphere" [1] "translate" 2.8 0.70 -4.1 "scale" 1.05 0.72 0.16 "material" "upholstery" }
+Shape "rightChairSeat" { "sphere" [1] "translate" 2.8 -0.45 -3.6999999999999997 "scale" 1.05 0.12 0.7 "material" "upholstery" }
+Light "warmCeiling" { "point" [-3 7 4] "intensity" [180 145 105] }
+Light "coolFill" { "point" [5 4 1] "intensity" [45 58 80] }

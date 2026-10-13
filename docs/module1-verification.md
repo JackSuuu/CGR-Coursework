@@ -12,10 +12,10 @@ AI 回答或本资料中的解释复制为报告正文。代码及调试可以�
 | 当前分支 | `module1`，修复、资产、文档仍是本地未提交改动 |
 | 模块范围 | §2.1：WSRT 核心功能 + DRT 网格/纹理/面光源/BRDF/景深/tone mapping |
 | 本阶段不要求 | Module 2 相机研究/AA 系列/采样器对比/BF-MD 研究；Module 3 BVH/PBRT 对比套件；Final importance sampling |
-| 数学和功能检查 | 上次执行 `make check-module1`：50 checks，0 failures；源码 `tests/module1_checks.cpp` |
+| 数学和功能检查 | 本次检查：50 checks，0 failures；源码 `tests/module1_checks.cpp`；带实际数值的记录在 `output/module1-evidence/module1_checks.log` |
 | 四张主图 | 均存在，同名日志均有成功写图和结束记录，0 parse warnings / 0 parse errors |
-| 真实参考照片 | 尚未提供；两张 creative 均为临时桌面构图 |
-| 报告与标注 | 尚需学生完成；没有生成 `reports/Module1.pdf` |
+| 参考照片 | 已提供 `scenes/photograph/cgr_ref_img.jpg`；两张 creative 已按咖啡馆笔记本/调料架布局重建；来源由学生自行说明 |
+| 报告与标注 | agent 曾生成正文/图注，需向老师确认处理方式；`make module1-report` 已将当前草稿导出到 `reports/Module1.pdf`，路径正确不等于内容可提交 |
 | PBRT-v4 差分验证 | 未进行；标准输入解析测试不等于与 PBRT 渲染一致 |
 
 50 个针对性检查不证明任意输入都正确；图片美观也不能单独证明公式或能量守恒。
@@ -88,16 +88,17 @@ main.cpp
 | Scene | 分辨率 | 实际主样本/像素 | MD | 基元数 | 灯数 | FOV | 光圈 | 焦距 | 本次 render time |
 |---|---|---:|---:|---:|---:|---:|---:|---:|---:|
 | WSRT_simple | 900×560 | 1 | 8 | 8 | 2 | 58° | 0 | — | 0.461692 s |
-| WSRT_creative | 960×600 | 1 | 12 | 47 | 2 | 48° | 0 | — | 3.801205 s |
-| DRT_simple | 600×400 | 32 | 4 | 336 | 2 | 46° | 0.18 | 9.0 | 66.585001 s |
-| DRT_creative | 480×320 | 24 | 4 | 682 | 3 | 50° | 0.18 | 13.5 | 82.613686 s |
+| WSRT_creative | 960×640 | 1 | 10 | 1230 | 2 | 46° | 0 | — | 22.864423 s |
+| DRT_simple | 600×400 | 128 | 4 | 336 | 2 | 46° | 0.18 | 9.0 | 252.429880 s |
+| DRT_creative | 480×320 | 96 | 5 | 1230 | 2 | 46° | 0.14 | 10.0 | 437.498226 s |
 
 - WSRT 不使用解析日志中默认的 `spp=4`；看实际 `WSRT: ... 1 sample/pixel` 行。
 - DRT 像素位置固定中心，spp 用于 lens/light 采样；不能称它已实现 Module 2 像素超采样。
 - 两张 DRT 均为 per-channel extended Reinhard，white point = 8。
 - 每个 area light 默认每次相机样本采 1 点；可通过 `"integer samples"` 另行配置。
 - BF=4 是保留兼容字段，当前没有参与漫反射分支，不能据它声称每次散射发出四条漫反射路径。
-- 最终两张 DRT 的这次计时来自同时启动的渲染；机器负载不受控。报告基线建议串行重测。
+- 旧32 spp DRT_simple 计时曾并发启动；当前128/96 spp两张DRT主图均为用户确认的串行测量。
+- `output/module1-evidence/baseline.csv` 保留此前四图统一串行的低采样基线（DRT=32/24 spp）；本节表格对应当前 `output/*.log`，不可混作同一轮测量。
 - render time 不含全部解析/写图时间；没有 BVH 构建时间，不要填写假的 0 或示例值。
 
 ### 环境（本次已核对）
@@ -124,7 +125,7 @@ main.cpp
 - 权重：下一段 `throughput *= mat->reflectance`；达到 MD 返回 `Color(0)`。
 - 真正修复：原来传 `ray.d` 给使用向外约定的 Reflect；终止时又直接返回 throughput 造成虚假亮度。
 - 证据：反射保留切向分量/反转法向分量；镜面平面看到 `(0.02,0.02,0.025)` 背景；深度终止贡献为零。
-- 可标注：WSRT_simple 左后镜面球；WSRT_creative 两侧 chrome 球的物体/桌面倒影。
+- 可标注：WSRT_simple 左后镜面球；WSRT_creative 的 polishedTrayA/B 上瓶身、标签与架子的倒影（chrome mirror），薄杆本身的反射较难辨认。
 - 学生自己回答：为什么限制递归？当前反射率如何影响图像？不要编造“MD>3 提升很小”的实验结论。
 
 <a id="f02"></a>
@@ -137,7 +138,7 @@ main.cpp
 - 实际路径：反射权重 `reflectance*R`；透射权重 `reflectance*(1-R)*(etaI/etaT)²`。
 - 真正修复：折射方向符号、翻转 ng 后无法区分出口、DRT 固定舍弃较弱 Fresnel 分支。
 - 证据：air→glass 30°，透射正弦=1/3；1↔1.5 正入射 R=0.04；glass→air 60° TIR；出口介质与 eta 权重测试。
-- 场景值：WSRT_simple glass eta=1.52；WSRT_creative glassSlab eta=1.60；DRT_creative paperweight eta=1.5。
+- 场景值：WSRT_simple glass eta=1.52；两张 creative 的 amberGlass eta=1.5。
 - 学生自己回答：R/T 随角度如何变化？哪个区域证明折射？图片不能独自证明该区域发生 TIR。
 
 <a id="f03"></a>
@@ -195,7 +196,7 @@ main.cpp
 - 变换：网格顶点预先变到 world space；显式顶点法线同样按 inverse transpose 变换。
 - 当前资产：uv_geodesic=162 vertices、320 faces、960 vt、162 vn；box=24 vertices、12 faces、4 vt、6 vn。
 - 真正修复：生成法线却未按顶点引用；网格 transform 被忽略；旧报告网格没有 vt，无法展示纹理。
-- 可标注：DRT_simple 左侧棋盘球与后方盒，均是 OBJ；DRT_creative 书上镜面网格也是 OBJ。
+- 可标注：DRT_simple 左侧棋盘球与后方盒，均是 OBJ；DRT_creative 瓶子、架子和笔记本盒体也是 OBJ。
 - 学生自己回答：平滑着色与几何轮廓为何不同？不能仅凭多面体外观证明 OBJ loader 正确。
 
 <a id="f08"></a>
@@ -217,7 +218,7 @@ main.cpp
 - 概率：area PDF=1/A；solid-angle PDF=`r²/(cosLight*A)`。
 - 单样本贡献：`f*cosSurface*Le/pdfLight*beta`；除以每灯 samples；相机样本再除以 spp。
 - DRT_simple：softbox 面积25.2、Le=(10,9.5,8.5)；侧灯面积5.75、Le=(2.5,4,7)。
-- DRT_creative：key/spec/rim 面积15.84/1/5.2；Le=(12,11.5,10)/(30,29,27)/(4,6,10)。
+- DRT_creative：warmCeiling/coolFill 面积29.4/9；Le=(10,8.3,5.7)/(3,4,6)。
 - 真正修复：矩形坐标系行/列混用；采样法线没变到世界空间；改用独立 lens/light 样本。
 - 可标注：地面上物体投影由暗到亮的半影边缘；面板本身只是 emitter 可见性，不是软阴影。
 - 学生自己回答：部分光源可见如何产生半影？采样噪声和物理软阴影如何区分？
@@ -243,9 +244,10 @@ main.cpp
 - 下一射线：`normalize(focusPoint-lensOrigin)`；同一像素的不同镜头起点朝相同焦面点。
 - 真正修复：原先每条 ray 沿自身方向走同样距离，产生球面焦点集合而非平面。
 - 证据：非中心像素、不同 lens samples 与 D=10 焦面交点一致；相机 up 向量也已验证。
-- 主图参数：simple A=0.18、D=9、spp=32；creative A=0.18、D=13.5、spp=24。
-- 可标注：simple 前方小红球、左侧纹理网格、后方盒；creative 左侧前景网格和书上后景。
+- 主图参数：simple A=0.18、D=9、spp=128；creative A=0.14、D=10、spp=96。
+- 可标注：simple 前方小红球、左侧纹理网格、后方盒；creative 笔记本与背景椅子。
 - 学生自己回答：离焦与 sampling noise 的区别？A=0 时应怎样？目前没有闭合光圈参考图，不能声称已测过光圈 sweep。
+- 后续已生成两张仅修改 A=0 的参考图及并排放大，见 `output/module1-evidence/DRT_*_dof_comparison.png`；这是单个针孔对照，不是光圈 sweep。
 
 <a id="f12"></a>
 ### F12：Reinhard 与输出编码
@@ -255,7 +257,7 @@ main.cpp
 - 两张 DRT：逐 RGB 通道映射，W=8；luminance 模式也有实现，但不是这两张主图使用的模式。
 - 公式：`c' = c*(1+c/W²)/(1+c)`；luminance 模式用 mappedY/Y 缩放 RGB。
 - 证据：c=W=4 映射为1；W=1 时严格恒等。
-- 当前图像 max：DRT_simple=0.973973；DRT_creative=1.000000。这不提供 clipped pixels 数量，也不证明完全无裁剪。
+- 当前图像 max：DRT_simple=0.970703；DRT_creative=1.000000。这不提供 clipped pixels 数量，也不证明完全无裁剪。
 - 学生自己回答：tone mapping 与 gamma/sRGB 有何不同？不能写“窗户不死白所以算法正确”。
 
 ## 5. 图片索引与标注候选
@@ -275,13 +277,14 @@ main.cpp
 | 右側红/绿球 | redSphere/greenSphere | Blinn-Phong 高光与材质颜色 |
 | 地板投影与棋盘 | ground | 硬阴影、平面 UV；地板是 diffuse，非镜面 |
 
-### WSRT_creative：临时桌面构图
+### WSRT_creative：参考照片驱动的咖啡馆构图
 
 ![WSRT_creative](../output/WSRT_creative.png)
 
-候选：chromeLeft/chromeRight 倒影；中央 slab 封闭玻璃椭球；bookPages/bookTop/
-bookBottom 书本；floor 木纹；archL/archR/archTop 三角形装饰。
-真实参考照片、与照片的关联说明和图注尚缺。
+参考：`scenes/photograph/cgr_ref_img.jpg`。
+候选：laptopBase/screenFrame/keysA/B 笔记本；marbleInset/tableFrame 桌面；
+rackLower/rackUpper 镜面架子；polishedTrayA/B 上的瓶身/标签倒影；amberBottle 玻璃瓶；瓶盖与标签；绿色椅子。托盘为展示反射而新增的艺术化物件。
+对应关系见 [module1-reference-scene.md](module1-reference-scene.md)，学生仍需写说明与图注。
 
 ### DRT_simple
 
@@ -291,14 +294,14 @@ bookBottom 书本；floor 木纹；archL/archR/archTop 三角形装饰。
 后方 checkerBlock OBJ 盒；地板投影半影；右边可见 bounce 发光面板。
 严格景深验证仍可补同场景 pinhole 参考；当前模糊判断与数学汇聚测试应分别说明。
 
-### DRT_creative：临时桌面构图
+### DRT_creative：参考照片驱动的咖啡馆构图
 
 ![DRT_creative](../output/DRT_creative.png)
 
-候选：nearMesh 前景离焦棋盘网格；farMesh 书本上的镜面网格；mirrorBall 倒影；
-glassPaperweight 玻璃镇纸；greenBall 高光；bookPages 的纸纹；物体投影半影。
-左侧/上方白色矩形是发光面板，不能直接标成“窗户投射的软阴影”。
-近处纹理因刻意离焦不易辨认，应以 DRT_simple 作为清晰网格纹理的主要证据。
+参考与 WSRT_creative 使用同一照片。候选：笔记本屏幕/键盘的网格 UV；
+调料瓶和钢架的 OBJ；桌面投影半影；背景绿色椅子的离焦。
+屏幕是带自发光项的表面，不是完整的照明屏幕传输模型；当前仍无漫反射间接光。
+清晰的网格纹理和强景深主证据仍可使用 DRT_simple。
 
 ## 6. PBRT 子集与错误处理材料
 
@@ -379,18 +382,21 @@ python3 scripts/generateModule1Assets.py
 | 发光窗户的亮区域就是 soft shadow | 发光面板、照明分布、物体遮挡半影是不同概念 |
 | 深度超过3收益微小、时间指数增长 | 没有该 sweep 数据；单分支镜面路径不必指数增长，玻璃双分支才可能快速增长 |
 | Module 1 必须列 BVH build time | BVH 属 Module 3；本分支未实现，不能捏造计时 |
-| 最好拍一张照片 | 创意图真实照片是明确要求，当前欠缺 |
+| 最好拍一张照片 | 创意图真实照片是明确要求；当前已提供原图，仍需学生说明来源与对应关系 |
 | 可以保证高分 | 不能；规范也考察学生自己的解释、图片标注、验证和提交完整性 |
 
 ## 10. 仍需学生自己完成
 
-- [ ] 两张 creative 的真实照片及场景对应关系。
+- [ ] 两张 creative 已链接用户提供的照片；学生自行说明来源与场景对应关系。
 - [ ] 四张最终图的本人图注、箭头/放大框。
 - [ ] 各小节的具体设计理由、困难、观察，不复制示例段落。
 - [ ] 在需要因果结论时补控制变量对照（例如 aperture=0、改变 samples/MD）；目前不能声称做过。
-- [ ] 串行基线计时和明确的机器/参数记录。
+- [x] 独立证据目录中的四主场景串行基线与机器/参数/hash记录；原报告表格仍需学生按真实数据自行处理。
 - [ ] 真实的 AI 使用范围与本人参与说明。
 - [ ] `reports/Module1.pdf`，以及规范指定的目录/资产打包。
 
 建议先用 [outline](module1-report-outline.md) 覆盖 §3.2 章节，再从本文件查找事实，
 最终仅保留学生自己理解、验证和撰写的解释，而不是提交这份资料索引。
+
+后续的架构、诊断定位、数值摘录、照片来源与A=0对照见
+[module1-technical-evidence.md](module1-technical-evidence.md)。

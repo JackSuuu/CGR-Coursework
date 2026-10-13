@@ -27,7 +27,7 @@ SRCS := $(shell find $(SRCDIR) -name '*.cpp' | sort)
 OBJS := $(patsubst $(SRCDIR)/%.cpp,$(OBJDIR)/%.o,$(SRCS))
 DEPS := $(OBJS:.o=.d)
 
-.PHONY: all clean smoke scenes check-module1
+.PHONY: all clean smoke scenes check-module1 module1-report
 
 all: $(OUT)
 
@@ -53,6 +53,11 @@ build/module1_checks: tests/module1_checks.cpp $(filter-out build/main.o,$(OBJS)
 
 check-module1: build/module1_checks
 	./build/module1_checks
+
+# Mechanical compilation/export only; report prose is authored by the student.
+module1-report:
+	latexmk -cd -pdf -interaction=nonstopmode -halt-on-error reports/module1/module1.tex
+	cp reports/module1/module1.pdf reports/Module1.pdf
 
 clean:
 	rm -rf $(OBJDIR) $(OUT)

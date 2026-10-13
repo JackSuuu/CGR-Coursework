@@ -12,7 +12,7 @@
 
 Integrator "distributed" {
     "integer maxdepth" 4      # MD: maximum ray-tree depth
-    "integer spp" 32         # lens/light samples per pixel, fixed pixel centre
+    "integer spp" 128        # lens/light samples per pixel, fixed pixel centre
     "float whitepoint" 8
 }
 

@@ -4,7 +4,7 @@
 \geometry{a4paper, margin=1in}
 \usepackage{graphicx}
 % Find project images when compiling from reports/module1/, reports/, or root.
-\graphicspath{{../../output/}{../output/}{output/}}
+\graphicspath{{../../output/}{../output/}{output/}{../../scenes/photograph/}{../scenes/photograph/}{scenes/photograph/}}
 \usepackage{float}
 \usepackage{hyperref}
 \usepackage{booktabs}
@@ -14,7 +14,7 @@
 \setlength{\emergencystretch}{2em}
 
 \title{Module 1 Report: Core Renderers}
-\author{Student Number: S2510156} % 替换为你的考号
+\author{Exam Number: B252751}
 \date{\today}
 
 \begin{document}
@@ -23,135 +23,275 @@
 
 \section{Introduction and AI Usage Declaration}
 % 根据 PDF §1.3 要求，必须声明 AI 使用情况
-% TODO (student-authored): distinguish your problem discovery, understanding,
-% judgement and actual edits from code generation/changes executed by AI.
-% Check the existing tool name and manual-authorship claims against real history.
+% Student: confirm the full tool history and describe your own contributions.
+% The current revision cannot retain the earlier claim of no AI writing assistance.
+% AUTHOR INPUT (confirmed by user): 架构由本人设计；本人提供思路、框架和原稿文字。
+% AUTHOR INPUT: 本人先决定文件整体框架；相机/求交数学借鉴Lab 1和lecture；
+% 共用WSRT/DRT组件的理由是调试简洁和一致性。原文见docs/module1-student-inputs.md第6节。
+% AUTHOR INPUT clarified: 本人提供所需数学公式/需求，由AI生成代码。
+% 方法部分来自课程，部分由AI建议后本人学习采用；先验证小型样本，再组合组件。
+% 本轮技术示例：像素中心到相机射线、三角形t/u/v求解、重心法线插值。
+% 原文摘录及与最终代码的差异见docs/module1-student-inputs.md第7节。
+% 仍缺：一个当时小样本的实际输入/预期/输出；原始coding prompt与迭代记录。
+% 不把当前示意代码当作最终函数，也不把agent的50 checks当作本人历史验证记录。
+% AUTHOR INPUT: 已提供creative镜面不明显->反馈->AI新增托盘->看图复查案例。
+% 见docs/module1-student-inputs.md第8节；反馈为回忆转述，不是逐字历史prompt。
+% TRANSLATION: 用户已说明老师允许翻译；以下新增个人经历译自本人提供的中文。
+% Source: docs/module1-student-inputs.md, sections 6--8; no invented verbatim prompts.
+% 补一组真实 coding prompt：初始请求 -> 错误反馈 -> 后续请求 -> 本人判断/修改/验证。
+% 原始消息、修改记录与测试输出分别定位；不要使用事后编造的 prompt。
 This report documents the implementation of the Whitted-Style Ray Tracer (WSRT) and Distributed Ray Tracer (DRT) for Module 1.
 
-\textbf{AI Usage Declaration:} I used an AI coding assistant (Claude Sonnet 4.6) to help generate initial boilerplate code for the PBRT parser and the basic ray-sphere intersection logic. I also used it to debug the refraction logic. The core integrator loops, the BRDF implementation, and the BVH (for future modules) were written and modified manually. All rendered images and scene files were created by me. The text of this report was written entirely by me without AI assistance.
+\textbf{AI Usage Declaration:} I designed the overall architecture and provided the ideas, report structure and original text. For implementation, I provided mathematical formulas and requirements to an AI coding assistant, which generated code. Some methods came from Lab~1 and the lectures; others were suggested by AI and then it study and applied by me. My development process was to checking individual components on small examples before combining them. AI assistance helped code generation and debugging for the integrators, reflection/refraction, BRDF, camera, mesh loading and parser, as well as scene assets, tests and image annotations.
+
+\textbf{Scene and evidence overview:} I took the reference photograph in the university's Teviot building. The simple scenes isolate the core features; the creative scenes combine them in a cafe table composition based on this photograph. The open laptop, pale marble tabletop with a dark wooden border, metal condiment rack, bottles and green chairs provide the main correspondences. A polished tray was added beneath the rack to make recursive reflections easier to inspect. The screen, keyboard, marble and label textures are procedural assets rather than image crops from the photograph. The reconstruction approximates the layout and materials, rather than matching a calibrated camera or reproducing the photograph pixel by pixel.
+% AUTHOR INPUT (confirmed): 照片为本人在学校 Teviot 楼拍摄，日期未提供。
+% Photograph source now included in the body, translated from the user's statement.
+% Source record: scenes/photograph/source.md.
+
+The lettered regions in the four figures identify visual examples. Numerical checks are used for properties that an image cannot establish on its own, such as TIR and BRDF energy bounds. WSRT uses a single pixel-centre ray; DRT averages independent lens and light samples at a fixed pixel centre. The current DRT evaluates direct illumination and recursive mirror/dielectric paths, without diffuse indirect illumination.
+
+% Architecture explanation below translates the user's account with checked file names.
+% 核对依据（结构事实，不是待复制正文）：
+% source/scene/scene.h: Scene 持有 camera、film、shapes、materials、lights。
+% source/integrator/integrator.h: Integrator::Render(const Scene&) -> Image。
+% main.cpp: ParseSceneFile -> MakeIntegrator -> Render -> WriteImage。
+% Render 调用 Camera::GenerateRay；IntersectScene 调用 Shape 求最近命中。
+% Hit/SurfaceInteraction 传递 t、p、n/ng、UV 和 material 引用。
+% Integrator 查询 Material、Light 并通过 Occluded 检查遮挡，然后累计亮度。
+% WSRT/DRT 共享几何、纹理与相机，积分/采样策略分别实现。
+% 本人已解释复用目标：保证debug简洁和一致性；自行展开具体复用/验证例子。
+% 原文技术核对：parser读取文件并构建Scene，不负责输出文件；
+% 像素双重循环位于whitted.cpp和distributed.cpp，非公共integrator.cpp。
+% 架构设计贡献不自动表示所有对应 C++ 实现均由本人手写。
+% 完整代码索引：docs/module1-technical-evidence.md，第1节。
+\subsection{Architecture and Development Process}
+I first decided the overall file structure and the responsibilities of the components. The parser reads the scene description and constructs the in-memory \texttt{Scene}, which holds the camera, film settings, geometry, materials and lights. \texttt{mesh.cpp} loads OBJ data. The pixel loops belong to the concrete integrators, \texttt{whitted.cpp} and \texttt{distributed.cpp}; they call \texttt{Camera::GenerateRay} to map a two-dimensional pixel sample to a three-dimensional viewing ray. My understanding of this mapping drew on the mathematics from Lab~1 and the lectures~\cite[Part~I, pp.~1--2]{cgr-notes}.
+
+The ray is tested against the geometry to find the nearest intersection. The integrator uses its position, normal and material to evaluate illumination~\cite{cgr-transcript}. For each light, a shadow ray tests whether another object blocks the segment between the surface and the light. An occluded point receives no direct contribution from that light. For a visible light on the front side, diffuse shading uses the surface-normal/light-direction cosine, and WSRT uses the halfway vector for Blinn--Phong highlights. Mirror materials instead launch recursive reflected rays. Finally, \texttt{Image} stores the pixels and the image output code writes the result. The common \texttt{integrator.cpp} contains the scene-wide intersection and occlusion queries and the integrator factory. I chose to share components between WSRT and DRT to simplify debugging and keep their behaviour consistent.
+
+\textbf{Formula-guided Code Generation:} I provided formulas and implementation requirements to AI rather than writing every implementation by hand. Examples included pixel-centre sampling, the camera basis and field-of-view mapping, the ray--triangle intersection equation
+\[
+    \mathbf{O}+t\mathbf{D}
+    =\mathbf{V}_0+u\mathbf{E}_1+v\mathbf{E}_2,
+\]
+and barycentric normal interpolation,
+\[
+    \mathbf{n}=\operatorname{normalize}
+    \bigl((1-u-v)\mathbf{n}_0+u\mathbf{n}_1+v\mathbf{n}_2\bigr).
+\]
+The triangle equation solves for $t$, $u$ and $v$ using cross products and scalar triple products. I checked components using small examples before integrating them. These are examples of the mathematical input I supplied, rather than verbatim quotations of the original prompts. A specific visual feedback and the division of work are recorded in the reflection section below.
 
 \section{WSRT (Whitted-Style Ray Tracer)}
 
 \subsection{Specular Reflection}
-\textbf{Design Decisions:} I implemented recursive reflection using the formula \( \mathbf{d}_r = \mathbf{d} - 2(\mathbf{d} \cdot \mathbf{n})\mathbf{n} \). The recursion depth is limited to a configurable maximum (MD=8 for simple, MD=12 for creative) to prevent infinite loops. The throughput is multiplied by the material's reflectance at each bounce.
-% 请自行补充：为什么限制递归？反射率如何影响图像？
-\textbf{Difficulties Encountered:} Initially, I passed the incident ray direction directly to the reflection function, which caused incorrect shading. I fixed this by ensuring the dot product uses the outward-facing normal. I also fixed a bug where depth termination returned the throughput as radiance, causing false brightness.
+% Parameter source: scenes/WSRT_simple.pbrt and scenes/WSRT_creative.pbrt.
+% TODO[depth-choice]: 为什么当前 simple/creative 接受 MD=8/10？
+% 如未做深度扫描，请说明实际设置依据，不写最优或已经收敛。
+% TODO[diagnosis]: 补真实的首个错误现象、排查步骤、执行者与验证记录。
+% AUTHOR CASE available: 用户已提供场景展示迭代，和下方反射符号bug分开。
+% 原场景细金属杆/环的倒影不明显；学生提出视觉反馈，AI实施场景调整。
+% 新增polishedTrayA/B：3.20x2.84，Rx=-90度，y=0.115；
+% chrome reflectance=(0.91,0.92,0.93)，相机/主体布局保留。
+% 复查读取渲染图，托盘中瓶身/标签/架子倒影可辨，对应creative标注A。
+% 没有逐像素参考颜色或完整路径记录；该案例不声称修改反射公式。
+% The scene-iteration account below is translated from the user's supplied record.
+% Evidence: tests/module1_checks.cpp，mirror preserves tangent / depth termination。
+% Log: output/module1-evidence/module1_checks.log，mirror.tangent_x / mirror.normal_y。
+\textbf{Design Decisions:} Recursive reflection uses \( \mathbf{d}_r = \mathbf{d} - 2(\mathbf{d} \cdot \mathbf{n}_g)\mathbf{n}_g \), where \(\mathbf{d}\) is the incident direction and \(\mathbf{n}_g\) is the geometric normal~\cite[Ch.~8, p.~26]{shirley2018}. The maximum depth is configurable (MD=8 for simple, MD=10 for creative), bounding the work for repeated mirror and dielectric encounters. At each bounce the path throughput is multiplied component-wise by the material reflectance; reflectance below one attenuates successive reflections. A path reaching the depth limit contributes zero radiance.
+
+\textbf{Difficulties Encountered:} The implementation originally mixed incident and outward direction conventions: \texttt{Reflect} expects \(\mathbf{w}_o=-\mathbf{d}\). Passing \(\mathbf{d}\) instead produced the wrong reflected direction. Another defect returned throughput at the depth limit, treating a path weight as emitted light. The fixes use the outward convention and return zero at termination. Analytic checks verify preservation of the tangential direction component, reversal of the normal component, and zero termination contribution.
 \textbf{Example Render:}
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{WSRT_simple.png}
+    \includegraphics[width=0.8\textwidth]{WSRT_simple_annotated.png}
     % Source: output/WSRT_simple.png; scene: scenes/WSRT_simple.pbrt.
-    % TODO: this is an unannotated render; add actual arrows/insets.
-    \caption{WSRT\_simple. The arrow points to the mirror sphere showing reflections of the floor and other objects.}
+    % Annotation IDs A-G: docs/module1-image-regions.md; original render preserved.
+    \caption{WSRT\_simple: A, mirror-sphere reflection; B, glass-sphere refraction; C, green-sphere Blinn--Phong highlights; D, spherical checker UVs; E, hard ground shadow; F, individual orange triangles; G, planar checker UVs. Original render: $900\times560$, one primary sample per pixel, MD=8.}
     \label{fig:wsrt_simple}
 \end{figure}
-\textbf{Observations:} The mirror sphere correctly reflects the checkerboard floor.
+\textbf{Observations:} Region A in Figure~\ref{fig:wsrt_simple} contains a compressed reflection of the checkerboard floor and the nearby orange geometry. In Figure~\ref{fig:wsrt_creative}, region A instead shows inverted bottle bodies, label bands and rack elements in the flat tray. The tray reflectance is $(0.91,0.92,0.93)$, compared with $(0.95,0.96,0.97)$ for the simple mirror sphere. These are recursive scene reflections, distinct from the small highlights produced by local shading.
+
+\textbf{Scene Iteration and My Contribution:} In an earlier version of \texttt{WSRT\_creative.pbrt}, the mirror surfaces were mainly the thin rods and rings of the bottle rack. I noticed that the mirror effect was not sufficiently clear and raised this as visual feedback. The parts occupied few pixels, making recognizable reflections difficult to see. The diagnosis focused on the small visible mirror area and the limited contrast of reflected objects. This was a scene-presentation issue; this iteration did not involve my changing the reflection formula. My feedback is described here from recollection, not quoted as an exact original prompt.
+
+Following my feedback, AI implemented a polished tray below the rack. Its reflective surface consists of \texttt{polishedTrayA} and \texttt{polishedTrayB}, covering $3.20\times2.84$ scene units. The local triangles are rotated by $-90^\circ$ about the $x$ axis to form a horizontal surface at $y=0.115$, with mirror reflectance $(0.91,0.92,0.93)$. The camera remained at $(4.4,4.2,8.2)$, looking towards $(-0.1,0.9,-0.05)$ with up vector $(0,1,0)$ and FOV $46^\circ$; the main caf\'e layout was retained.
+
+The qualitative expectation was that a broad, suitably positioned mirror would show structured reflections of the bottles, labels and rack. After re-rendering, I checked the image for these features. They were clearly visible in the tray and became region A in Figure~\ref{fig:wsrt_creative}. No per-pixel reference colours or complete ray paths were recorded for this iteration. The result demonstrates a clearer presentation of recursive reflection, rather than proving the reflection formula for every input.
 
 \subsection{Specular Refraction (Fresnel and TIR)}
-\textbf{Design Decisions:} I used Snell's Law (\( \eta_i \sin\theta_i = \eta_t \sin\theta_t \)) and the Fresnel equations to compute the reflection/refraction ratio. Total Internal Reflection (TIR) is handled when \( \sin^2\theta_t \ge 1 \). The medium is determined by checking \( \text{dot}(\mathbf{ng}, \mathbf{ray.d}) < 0 \). The transmission weight is scaled by \( (\eta_i/\eta_t)^2 \).
-\textbf{Difficulties Encountered:} I had bugs with the sign of the refraction direction and the handling of the normal when exiting the medium. I also had to fix the DRT integrator which was discarding the weaker Fresnel branch.
+% TODO[optics-evidence]: 为现有说明补测试定位与自己的结果解释。
+% tests/module1_checks.cpp: Snell: air to glass at 30 degrees / Fresnel TIR。
+% 保存日志：snell.air_glass_30.sin_theta_t=0.333333333333，预期1/3；
+% fresnel.normal_incidence.R=0.04；fresnel.glass_air_60.R=1。
+% 出口分支另查 inside glass ray selects exit medium and reciprocal eta scaling。
+% 这些是修复后检查；原错误如何被发现仍需本人真实经历。
+\textbf{Design Decisions:} Snell's law, \( \eta_i \sin\theta_i = \eta_t \sin\theta_t \), determines the transmitted direction~\cite[Ch.~9, pp.~29--30]{shirley2018}, while the dielectric Fresnel equations assign weights $R$ and $1-R$ to reflection and transmission. The entry test \(\mathbf{n}_g\cdot\mathbf{d}<0\) is performed before orienting the normal, so an exiting ray selects glass-to-air indices. Transmission throughput includes \((\eta_i/\eta_t)^2\) for the radiance convention. If \(\sin^2\theta_t\geq1\), no transmitted direction is generated and $R=1$. For air-to-glass incidence, reflectance rises towards grazing angles; at normal incidence with $\eta=1.5$, $R=0.04$.
+
+\textbf{Difficulties Encountered:} Incorrect direction signs and premature normal flipping caused errors in exit-medium selection. The DRT also discarded the weaker Fresnel branch; both nonzero branches are now evaluated. Numerical checks cover air-to-glass incidence at $30^\circ$ ($\sin\theta_t=1/3$), normal-incidence reflectance of $4\%$, and glass-to-air incidence at $60^\circ$, which exceeds the critical angle and gives TIR.
 \textbf{Example Render:}
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{WSRT_creative.png}
-    % Source: output/WSRT_creative.png; actual glass geometry is a scaled sphere.
-    % TODO: add your real inspiration photograph and verify reflection claims.
-    \caption{WSRT\_creative. The arrow indicates the glass slab where refraction and internal reflection are visible.}
+    \begin{minipage}[c]{0.35\textwidth}
+        \centering
+        \includegraphics[angle=-90,origin=c,width=\linewidth]{cgr_ref_img.jpg}
+    \end{minipage}\hfill
+    \begin{minipage}[c]{0.62\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{WSRT_creative_annotated.png}
+    \end{minipage}
+    % Reference: scenes/photograph/cgr_ref_img.jpg; display rotated only.
+    % Current scene: laptop, marble inset, chrome rack/bottles and polished tray.
+    % FACTS: A=tray mirror; B=amberBottle, eta=1.5; C=screen UV; D=table shadow.
+    % The image does not isolate a TIR event.
+    % Previous draft caption retained for revision history:
+    % \caption{WSRT\_creative. The arrow indicates the glass slab where refraction and internal reflection are visible.}
+    \caption{My reference photograph taken in the university's Teviot building (left) and WSRT\_creative reconstruction (right). A marks bottle and rack reflections in the added polished tray; B identifies the transparent amber bottle ($\eta=1.5$); C marks the screen texture; D marks the hard tabletop shadow. Original render: $960\times640$, one primary sample per pixel, MD=10, two point lights.}
     \label{fig:wsrt_creative}
 \end{figure}
-\textbf{Observations:} The glass slab (eta=1.60) shows distorted background patterns due to refraction.
-% 请自行补充：R/T 随角度如何变化？哪个区域证明折射？
+% Previous draft observation (outdated scene; retained for student revision):
+% \textbf{Observations:} The glass slab (eta=1.60) shows distorted background patterns due to refraction.
+\textbf{Observations:} Region B in Figure~\ref{fig:wsrt_simple} is the clearest refraction example: the checker pattern seen through the central glass sphere ($\eta=1.52$) is displaced and curved relative to the surrounding floor. Region B in Figure~\ref{fig:wsrt_creative} identifies the narrower amber bottle ($\eta=1.5$), whose body combines transmitted scene detail and surface reflection. Occlusion by other bottles, the rack and the opaque label makes this a less isolated optical example. The bottle is a closed solid surface of revolution, not a hollow bottle with liquid or a glass slab; its tint is a surface weight rather than volumetric absorption. The labels are separate opaque surfaces. Neither the dark portions of the sphere nor the bottle annotation establish a particular TIR event without a pixel-path trace; TIR is supported by the numerical test above.
 
 \subsection{Blinn-Phong Shading}
-\textbf{Design Decisions:} Ambient is \( \text{baseColor} \times \text{ambientScale} \). Diffuse uses \( \text{baseColor}/\pi \times \max(0, \mathbf{n}\cdot\mathbf{wi}) \times I/r^2 \). Specular uses the half-vector \( \mathbf{h} = \text{normalize}(\mathbf{wo} + \mathbf{wi}) \) with \( \max(0, \mathbf{n}\cdot\mathbf{h})^{\text{shininess}} \).
+% TODO[shading-evidence]: 区分材质解析测试与高光公式验证。
+% 现有50 checks包含 Blinn-Phong type and float phong exponent parsed；
+% 不包含独立 Blinn-Phong 高光公式数值检查，不能把前者当作后者。
+\textbf{Design Decisions:} Ambient is \( \text{baseColor} \times \text{ambientScale} \). Diffuse uses \( \text{baseColor}/\pi \times \max(0, \mathbf{n}\cdot\mathbf{w}_i) \times I/r^2 \). Specular uses the half-vector \( \mathbf{h} = \text{normalize}(\mathbf{w}_o + \mathbf{w}_i) \) and \( k_s\max(0, \mathbf{n}\cdot\mathbf{h})^{\text{shininess}} \), multiplied by $I/r^2$. The half-vector bisects the outward viewing and light directions~\cite[Part~III, Sec.~3, p.~4]{cgr-notes}. Increasing the exponent concentrates the lobe around alignment with the normal.
 \textbf{Example Render:}
-In Figure \ref{fig:wsrt_simple}, the red sphere (shininess=120) and green sphere (shininess=60) show distinct specular highlights.
-% 请自行补充：半角向量是什么？指数为什么影响亮斑宽度？
+Region C in Figure~\ref{fig:wsrt_simple} circles two bright highlights on the green sphere (shininess=60); the red sphere (shininess=120) also has two visible highlights. The scene file specifies two point lights. These localized bright spots differ from the structured scene reflection in the mirror sphere. The red and green spheres also differ in position, colour and specular weight, so their appearance is not a controlled comparison of shininess alone.
 
 \subsection{Point Light Sources and Shadows}
-\textbf{Design Decisions:} I implemented point lights with intensity \( I \) and distance attenuation \( I/r^2 \). Shadow rays are cast from the intersection point towards the light, with a maximum distance of \( \text{dist} - 2\epsilon \) to avoid self-shadowing. The shadow ray origin is offset by \( \mathbf{p} + \mathbf{oriented\_ng} \times \epsilon \), where \( \epsilon = 10^{-4} \times \max(1, \text{dist}) \).
+% TODO[light-shadow-evidence]: 可定位 tests/module1_checks.cpp 中的
+% WSRT/DRT diffuse light equals rho/pi * I/r^2, no self-shadow；
+% 输入 rho=0.5、I=4、r=2、正入射、ambient/specular=0；预期0.5/pi。
+% 同测试加入段内 sphere blocker 后预期0，保存日志为 PASS。
+% 日志未输出这两项原始浮点值，不将解析预期伪称为打印的实测值。
+\textbf{Design Decisions:} Point lights use intensity \( I \) and distance attenuation \( I/r^2 \). Shadow rays test the finite segment towards each light, with maximum distance \( \text{dist} - 2\epsilon \), so an object beyond the light cannot block it. The origin is offset by \(\mathbf{p}+\epsilon\mathbf{n}_{g,\mathrm{oriented}}\), where \(\epsilon=10^{-4}\max(1,\text{dist})\) and the geometric normal is oriented towards the light-facing side. This avoids numerical self-intersection. Mirror and refraction rays instead use a small offset along their outgoing direction.
 \textbf{Example Render:}
-The hard shadows cast by the triangle and spheres on the floor in Figure \ref{fig:wsrt_simple} demonstrate this feature.
-% 请自行补充：为什么做有限段查询？为什么偏移？
+Region E in Figure~\ref{fig:wsrt_simple} shows a sharply bounded ground shadow to the right of the green sphere. Region D in Figure~\ref{fig:wsrt_creative} marks the tabletop shadow beside the laptop; the rack also casts narrow, angular shadows. Each ideal point light gives binary visibility at a surface point, and the two lights can produce overlapping shadows with different brightness levels. The light positions and intensities are established by the scene files, since the point lights are not drawn as visible panels.
 
 \subsection{Textures and UV Mapping}
-\textbf{Design Decisions:} Spheres use \( u = \phi/(2\pi) \) and \( v = \arccos(n.z)/\pi \). Planes use local UV. Textures are loaded from PPM (P3/P6), converted from sRGB to linear, and sampled bilinearly.
+% TODO[texture-evidence]: tests/module1_checks.cpp 中定位
+% sphere north pole latitude / sphere equator longitude and latitude / black texture wrap。
+% 球面点(0,1,0)预期UV=(0.25,0.5)；black-wrap域内保留(0.2,0.4,0.6)，域外为0。
+\textbf{Design Decisions:} Spheres use \(u=\phi/(2\pi)\), with longitude derived from $\operatorname{atan2}(n_y,n_x)$ and wrapped into the texture domain, and \(v=\arccos(n_z)/\pi\). Planes use local UVs; triangle UVs are interpolated with barycentric weights. PPM textures (P3/P6) are converted from sRGB to linear colour when loaded and sampled bilinearly, with UV scaling and wrapping.
 \textbf{Example Render:}
-The textured sphere in Figure \ref{fig:wsrt_simple} uses a 32x32 checkerboard texture.
-% 请自行补充：UV 如何从表面点产生？粗纹理为何更容易看清？
+Region D in Figure~\ref{fig:wsrt_simple} shows the $32\times32$ blue/beige checker texture wrapping over an analytic sphere. Region G shows the same asset repeated on the rotated ground plane, with $u$ and $v$ scales of 0.55. The broad checks make the coordinate mapping visible, although the distant floor still aliases under single-sample rendering. Region C in Figure~\ref{fig:wsrt_creative} shows a procedural $128\times80$ screen image mapped across two triangles; its lines remain aligned across the panel rather than being assigned a constant material colour.
 
 \subsection{Geometry and Transformations}
-\textbf{Design Decisions:} I support spheres (quadratic solution), planes (z=0 local), and triangles (Möller–Trumbore). Transformations are applied using inverse matrices for rays and inverse-transpose for normals. Ray directions are \textbf{not} re-normalized after transformation to keep \( t \) consistent between object and world space.
+\textbf{Design Decisions:} Sphere intersections solve a quadratic, planes use local $z=0$, and individual triangles use M\"oller--Trumbore intersection. The nearest positive hit determines visibility. Rays are transformed by the inverse object matrix and normals by the inverse transpose~\cite[Part~IV, Sec.~3, p.~5]{cgr-notes}. Transformed ray directions are \textbf{not} re-normalized: retaining the same parameter in $\mathbf{p}(t)=\mathbf{o}+t\mathbf{d}$ makes hits comparable across differently scaled objects.
 \textbf{Example Render:}
-The orange triangle and spheres in Figure \ref{fig:wsrt_simple} demonstrate correct intersection and transformation.
-% 请自行补充：为什么必须比较一致的 t？为什么选最近正交点？
+Region F in Figure~\ref{fig:wsrt_simple} identifies the two individual orange triangles; A--D contain analytic spheres, and G is a plane rotated into the ground orientation. These give distinct geometry examples within one view. A numerical scaling check is stronger evidence for parameter consistency: a unit sphere scaled by two, viewed from $(0,0,5)$ along $-z$, is hit at $t=3$ and world-space $z=2$. Inverse-transpose checks also verify that a normal remains perpendicular to a transformed tangent under nonuniform scale.
 
 
 \section{DRT (Distributed Ray Tracer)}
 
 \subsection{Triangle Meshes (OBJ)}
-\textbf{Design Decisions:} I implemented an OBJ loader supporting v/vt/vn, negative indices, and fan triangulation. Smooth normals are computed as area-weighted cross products when not provided.
+% TODO[mesh-evidence]: tests/module1_checks.cpp 中定位 report geodesic mesh、
+% generated mesh normals receive per-corner indices、OBJ scene translate/scale applied。
+% 输入分别为 scenes/meshes/uv_geodesic.obj、tests/fixtures/no_normals.obj、
+% tests/fixtures/module1.pbrt；具体断言和保存的PASS对应解释，不仅列模型面数。
+\textbf{Design Decisions:} The OBJ loader supports \texttt{v/vt/vn} corner indices, negative indices and fan triangulation of polygons. When normals are absent, adjacent unnormalized face cross products are accumulated to produce area-weighted vertex normals. Mesh vertices are transformed into world space; supplied or generated normals use the inverse transpose. Interpolated vertex normals smooth shading within the triangular surface, but do not change its geometric shapes.
 \textbf{Example Render:}
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{DRT_simple.png}
-    % Source: output/DRT_simple.png; 600x400, spp=32, aperture=0.18, focus=9.
+    \includegraphics[width=0.8\textwidth]{DRT_simple_annotated.png}
+    % Source: output/DRT_simple.png; 600x400, spp=128, aperture=0.18, focus=9.
     % Left checker sphere and background box are both OBJ meshes with UVs.
-    \caption{DRT\_simple. The arrow points to the OBJ mesh (geodesic sphere) with smooth shading.}
+    % Annotation IDs A-E and global Reinhard parameters: docs/module1-image-regions.md.
+    \caption{DRT\_simple: A, textured OBJ geodesic sphere with vertex normals; B, background checker-box mesh; C, blue-sphere Phong highlight; D, soft shadow beneath and beside the blue sphere; E, foreground red sphere used to inspect defocus. Original render: $600\times400$, 128 lens/light samples per pixel, MD=4, aperture radius 0.18 and focus distance 9; per-channel extended Reinhard with $W=8$.}
     \label{fig:drt_simple}
 \end{figure}
-% 请自行补充：平滑着色与几何轮廓为何不同？
+\textbf{Observations:} Region A in Figure~\ref{fig:drt_simple} is the OBJ asset \texttt{uv\_geodesic.obj}, with 320 triangular faces, 960 texture-coordinate entries and 162 vertex normals. Its rounded shading is consistent with interpolated normals; it is not an analytic sphere. Region B is the visible portion of a separate 12-face OBJ box. The creative bottles, rack rings, rods and laptop box components provide further mesh examples. The loader tests check actual UV/normal corner references, since a rounded appearance alone cannot verify file loading or indexing.
 
 \subsection{Textures on Meshes}
-\textbf{Design Decisions:} UV coordinates are interpolated using barycentric weights from the triangle intersection. The base color is computed as \( \text{DiffuseColor} \times \text{TextureAt}(\text{uv}) \).
+\textbf{Design Decisions:} UV coordinates are interpolated using the triangle-intersection barycentric weights: $\mathbf{uv}=b_0\mathbf{uv}_0+b_1\mathbf{uv}_1+b_2\mathbf{uv}_2$. The base colour is \(\text{DiffuseColor}\times\text{TextureAt}(\mathbf{uv})\) and is passed into the BRDF. A texture declaration alone is insufficient: valid corner UV indices and use of the sampled colour in shading are both necessary. Normal interpolation controls lighting orientation, whereas UV interpolation selects positions in the texture.
 \textbf{Example Render:}
-In Figure \ref{fig:drt_simple}, the left OBJ mesh shows a blue/beige checkerboard texture.
-% 请自行补充：为什么仅声明 texture 文件不够？
+The blue/beige pattern in region A of Figure~\ref{fig:drt_simple} follows the curved mesh surface, while region B shows checks on a planar box face. In Figure~\ref{fig:drt_creative}, region C shows repeated key shapes on the laptop keyboard, mapped from the $128\times64$ procedural PPM across two triangles. The visible keys are texture detail rather than individually modelled keycaps. A separate check confirms that a black diffuse texel produces zero diffuse BRDF contribution.
 
 \subsection{Area Light Sources and Soft Shadows}
-\textbf{Design Decisions:} I used PCG32 pseudo-random uniform sampling over the area light surface. The solid-angle PDF is \( r^2 / (\cos\theta_{\text{light}} \times A) \). The contribution per sample is \( f \times \cos\theta_{\text{surface}} \times L_e / \text{pdf} \times \text{beta} \), divided by the number of samples per light.
-\textbf{Difficulties Encountered:} I initially mixed up the row/column coordinates of the rectangle emitter and forgot to transform the sampling normal to world space.
+% TODO[light-size-and-spp]: 自行说明面灯覆盖的目标区域，以及为何接受当前采样成本。
+% 已确认数据：simple 32->128 spp，252.429880 s；creative 24->96 spp，437.498226 s。
+% 本人已提供观察：高光、桌面、背景更平滑，软阴影更容易辨认；放大后仍有少量颗粒。
+% 原文记录在 docs/module1-student-inputs.md 第5节；请自行写入观察和选择理由。
+% 面灯证据：tests/module1_checks.cpp，rectangle samples actual corners / area-to-solid-angle PDF。
+% rectangle.fixture.area=4、rectangle.fixture.solid_angle_pdf=1，均与预期一致。
+% 该fixture没有直接断言返回的ln法线值；现有文字的法线测试结论须本人核对证据。
+\textbf{Design Decisions:} PCG32 pseudo-random samples select points uniformly over each rectangular emitter. The area density $1/A$ is converted to a solid-angle PDF \(p_\omega=r^2/(A\cos\theta_{\mathrm{light}})\). Each visible sample contributes \(\beta f\cos\theta_{\mathrm{surface}}L_e/p_\omega\), averaged over samples per light and then over camera samples. The current scenes use one sample per light for each camera sample. Partial visibility of an extended emitter produces a penumbra: different sampled points can be visible or occluded at the same surface point~\cite[Part~VI, Sec.~5, pp.~7--8]{cgr-notes}.
+
+\textbf{Difficulties Encountered:} The rectangle sampling frame originally mixed row and column coordinates, and the sampling normal was not transformed into world space. Checks of sampled corners, world-space normals, area and the solid-angle PDF address these defects independently of image appearance.
 \textbf{Example Render:}
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{DRT_creative.png}
-    % Source: output/DRT_creative.png; 480x320, spp=24, aperture=0.18, focus=13.5.
-    % TODO: add your real inspiration photograph and penumbra annotations.
-    \caption{DRT\_creative. The arrow indicates the soft shadow (penumbra) cast by the green sphere.}
+    \begin{minipage}[c]{0.35\textwidth}
+        \centering
+        \includegraphics[angle=-90,origin=c,width=\linewidth]{cgr_ref_img.jpg}
+    \end{minipage}\hfill
+    \begin{minipage}[c]{0.62\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{DRT_creative_annotated.png}
+    \end{minipage}
+    % Source: output/DRT_creative.png; 480x320, spp=96, aperture=0.14, focus=10.
+    % FACTS: A=tray mirror; B=table penumbra; C=keyboard mesh UV; D=chair defocus.
+    % Previous draft caption retained for student revision (no green foreground sphere):
+    % \caption{DRT\_creative. The arrow indicates the soft shadow (penumbra) cast by the green sphere.}
+    \caption{My reference photograph taken in the university's Teviot building (left) and DRT\_creative reconstruction (right). A marks recursive bottle reflections in the added tray; B marks the tabletop penumbra beside the laptop; C marks the keyboard UV texture; D identifies the background green chair used to inspect defocus. Original render: $480\times320$, 96 lens/light samples per pixel, MD=5, aperture radius 0.14 and focus distance 10; per-channel extended Reinhard with $W=8$.}
     \label{fig:drt_creative}
 \end{figure}
-% 请自行补充：部分光源可见如何产生半影？采样噪声和物理软阴影如何区分？
+\textbf{Observations:} Region D in Figure~\ref{fig:drt_simple} shows a broad transition from the dark contact region below the blue sphere to the brighter floor. Region B in Figure~\ref{fig:drt_creative} similarly marks a gradual tabletop shadow transition beside the laptop. The creative emitters have areas 29.4 and 9.0 in scene units, replacing the WSRT point lights. At 128 and 96 samples per pixel, respectively, visible grain remains across lit surfaces and shadow edges. The penumbra is the spatial change in mean illumination; the speckling is Monte Carlo error in its estimate. The bright panel at the right of DRT\_simple is a visible emitter, not itself a soft shadow. The two creative images differ in material model, light geometry, resolution and camera sampling, so they illustrate the features rather than providing an integrator-only controlled comparison.
+
+% Translation of the user's high-sampling observation; no measured noise ratio claimed.
+\textbf{Higher-sample Renders:} After increasing DRT\_simple from 32 to 128 samples per pixel and DRT\_creative from 24 to 96, I inspected both the original and annotated images. The sphere highlights, tabletop and background appeared smoother, and the soft shadows were easier to distinguish. A small amount of grain remained visible on enlargement.
 
 \subsection{Phong BRDF and Energy Conservation}
-\textbf{Design Decisions:} The BRDF is \( k_d/\pi + k_s \frac{e+2}{2\pi} \max(0, \text{Reflect}(\mathbf{wi}, \mathbf{n}) \cdot \mathbf{wo})^e \), where \( k_s = \text{clamp}(\text{specular}, 0, 1) \) and \( k_d = \text{clamp}(\text{texturedDiffuse}, 0, 1) \times (1-k_s) \). The cosine term is multiplied in the integrator, not in the BRDF.
+% TODO[brdf-evidence]: tests/module1_checks.cpp 的 Independently integrate 区域；
+% 保存日志ID=phong.hemisphere，0/45/80度积分分别为
+% 0.999765054384 / 0.765690070758 / 0.360274220793，上界1.0001。
+\textbf{Design Decisions:} The BRDF is \( k_d/\pi + k_s \frac{e+2}{2\pi} \max(0, \text{Reflect}(\mathbf{w}_i, \mathbf{n}) \cdot \mathbf{w}_o)^e \), where \( k_s = \text{clamp}(\text{specular}, 0, 1) \) and \( k_d = \text{clamp}(\text{texturedDiffuse}, 0, 1) \times (1-k_s) \). The normalization factor controls the specular lobe's integrated contribution as $e$ changes; the $(1-k_s)$ factor separately reserves a per-channel energy budget for diffuse reflection. The integrator multiplies the surface cosine once, outside the BRDF, and the BRDF is zero outside the supported hemisphere.
 \textbf{Example Render:}
-The glossy highlights on the balls in Figure \ref{fig:drt_creative} demonstrate the Phong BRDF.
-% 请自行补充：lobe normalization 与总能量预算分别解决什么？
+% FACT: DRT_simple annotation C targets ballMat (Phong exponent 60, ks=0.35).
+% Previous draft example retained; balls are not present in the current creative layout:
+% The glossy highlights on the balls in Figure \ref{fig:drt_creative} demonstrate the Phong BRDF.
+Region C in Figure~\ref{fig:drt_simple} marks the broad upper-left highlight on the blue sphere, with exponent $e=60$ and $k_s=(0.35,0.35,0.35)$. Region A in Figure~\ref{fig:drt_creative} is instead an ideal mirror reflection, not a Phong highlight. The highlight provides a visual example of glossy response but does not prove energy conservation. The numerical check integrates $f\cos\theta$ over the hemisphere using a $256\times256$ grid for diffuse input 1, $k_s=0.8$ and $e=20$, at viewing angles $0^\circ$, $45^\circ$ and $80^\circ$; the reflected energy is bounded by $1.0001$ for these cases.
 
 \subsection{Defocus Blur and Depth of Field}
-\textbf{Design Decisions:} I implemented a thin-lens camera model. Lens sampling uses \( r = \text{lensRadius} \times \sqrt{u} \) and \( \theta = 2\pi v \). The focal point is \( \mathbf{p} + \mathbf{dir} \times t_f \), where \( t_f = \text{focusDistance} / (\mathbf{dir} \cdot \text{forward}) \).
-\textbf{Difficulties Encountered:} I originally had each ray travel a fixed distance along its own direction, creating a spherical focal surface. I fixed this to intersect a flat focal plane.
+% TODO[focus-choice]: 你希望哪些物体清晰、哪些离焦？A和D最初如何确定？
+% 不把现有数值反推为未发生的个人选择过程。
+% Evidence: camera.planar_focus.point_distance，两个样本焦面交点距离实测0。
+% output/module1-evidence/*_dof_comparison.png 是旧32/24 spp成对对照；
+% 当前128/96 spp主图不能与旧针孔图混称为只改变光圈的对照。
+\textbf{Design Decisions:} The thin-lens camera samples a uniform aperture disk using \(r=A\sqrt{u}\) and \(\theta=2\pi v\), where $A$ is the aperture radius. For a pinhole direction $\mathbf{d}$, the focal point is \(\mathbf{p}_{\mathrm{camera}}+t_f\mathbf{d}\), with \(t_f=D/(\mathbf{d}\cdot\mathbf{forward})\). Each sampled lens origin is aimed at this common point on the plane at forward distance $D$~\cite[Ch.~11, pp.~37--39]{shirley2018}. Objects away from this plane are projected to a spread of positions as the lens origin varies; $A=0$ reduces the construction to a pinhole.
+
+\textbf{Difficulties Encountered:} Advancing a fixed distance along every pinhole direction originally formed a spherical focus surface. Intersecting the planar focus surface fixes the off-axis behaviour. A numerical check verifies that rays for a noncentral pixel, generated from different lens samples, meet the same point on the $D=10$ focal plane.
 \textbf{Example Render:}
-In Figure \ref{fig:drt_simple} (aperture=0.18, focus=9.0), the foreground red ball and background box are blurred, while the mid-ground is sharp.
-% 请自行补充：离焦与 sampling noise 的区别？A=0 时应怎样？
+Figure~\ref{fig:drt_simple} uses $A=0.18$, $D=9$ and 128 samples per pixel. The foreground red sphere in region E and the rear checker box in region B have softened boundaries, while the main checker mesh retains more recognizable pattern structure. Figure~\ref{fig:drt_creative} uses $A=0.14$, $D=10$ and 96 samples per pixel; region D selects the green chair behind the screen as a background defocus example, relative to the laptop and bottle arrangement. Grain on a flat-coloured surface is not evidence of defocus. Since no same-scene $A=0$ reference is included, these observations are consistent with the lens model but do not isolate blur from sampling and resolution effects quantitatively.
 
 \subsection{Reinhard Tone Mapping}
-% TODO: DRT_creative film max is 1.0; appearance alone does not prove no clipping.
-\textbf{Design Decisions:} I used extended Reinhard tone mapping per RGB channel with white point \( W=8 \): \( c' = c \times (1 + c/W^2) / (1 + c) \). This is applied after averaging HDR samples and before sRGB encoding.
+% TODO[tone-map-choice]: 自行解释选择per-channel与W=8的实际依据。
+% tests/module1_checks.cpp；日志reinhard.c4_W4实际1、reinhard.c0_5_W1实际0.5。
+% 数值检查不等于当前主图无裁剪；没有原始HDR对照时不声称测得裁剪比例。
+% DRT_creative film max is 1.0; appearance alone does not prove no clipping.
+\textbf{Design Decisions:} Both DRT scenes use extended Reinhard tone mapping per RGB channel, with white point \(W=8\): \(c'=c(1+c/W^2)/(1+c)\). The sequence is HDR sample averaging, tone mapping, clamping to $[0,1]$, and finally sRGB encoding when writing the image. Averaging before this nonlinear mapping avoids averaging already-compressed samples. Tone mapping compresses the radiance range; sRGB encoding converts display-linear values to the output encoding and is a separate operation.
 \textbf{Example Render:}
-The white panels in Figure \ref{fig:drt_creative} are not blown out, demonstrating the tone mapping.
-% 请自行补充：tone mapping 与 gamma/sRGB 有何不同？
+% FACT: Reinhard is global/per-channel, W=8; DRT_creative film max=1.0.
+% Previous claim retained for student revision; appearance does not prove no clipping:
+% The white panels in Figure \ref{fig:drt_creative} are not blown out, demonstrating the tone mapping.
+Both DRT figures retain dark object regions alongside a bright screen or emitter, but this appearance is only qualitative context. The mapping sends $c=W$ to 1, and values above $W$ can exceed 1 before the final clamp. The current logs report post-mapping, post-clamp film maxima of 0.970703 for DRT\_simple and 1.000000 for DRT\_creative, before sRGB encoding. The latter is consistent with channels reaching display white, but supplies neither a clipped-pixel count nor the original HDR values. The white screen or panel therefore cannot establish an absence of clipping. Formula checks independently verify white-point mapping ($c=W=4$ gives 1) and the $W=1$ identity case.
 
 
 \section{PBRT Scene Compatibility}
-I support a subset of PBRT syntax including Film, Sampler, Integrator, LookAt, Camera, WorldBegin/End, Material, NamedMaterial, PPM imagemap Texture, point LightSource, diffuse AreaLightSource, sphere, inline trianglemesh, and basic transforms (Translate, Scale, Rotate).
-\textbf{Error Handling:} The parser logs errors for missing textures or unknown shapes. Unsupported features (e.g., Includes, Object instances) are logged as warnings. A test fixture (\texttt{broken.pbrt}) confirms that the renderer handles errors gracefully without crashing.
+The parser supports a PBRT subset: Film, Sampler, Integrator, LookAt, Camera, WorldBegin/End, attribute scopes, Material/NamedMaterial, PPM imagemap Texture, point LightSource, diffuse AreaLightSource, spheres, inline triangle meshes and Translate/Scale/Rotate. The project's named, brace-delimited scene format is also retained and supports OBJ asset loading. Asset paths are resolved relative to the scene file. Standard PBRT FOV uses the smaller image axis; the project block format uses the larger axis, a distinction relevant when translating cameras.
+
+\textbf{Error Handling and Checks:} The \texttt{broken.pbrt} fixture verify diagnostics for a missing texture, an unknown primitive and unsupported object syntax. The \texttt{standard.pbrt} fixture checks standard statements, scopes, multiline mesh arrays, named textures, transforms and point/area emitters. All four reported-scene logs record zero parse warnings and errors. These checks establish behaviour for the supported inputs, rather than full PBRT equivalence: includes, general instancing, animation and nested media are unsupported, and no PBRT-v4 differential rendering comparison has been performed. The current implementation also has no diffuse indirect lighting, so the laptop's emissive screen is not evidence of simulated screen illumination on the table.
+
+\textbf{Verification Summary:} The existing \texttt{make check-module1} suite contains 50 checks covering optical directions and weights, transformed intersections and normals, mesh attributes, light sampling, BRDF energy, camera focus, tone mapping and parser diagnostics. These targeted checks complement the annotated images; they do not establish correctness for arbitrary scenes.
 
 \section{Profiling Results}
 % 根据你的 txt 文件，这里只放 render time，并说明 parse/total timer 未完成
-% TODO: final DRT measurements below were started concurrently; remeasure
-% serially for a controlled baseline. The renderer itself is single-threaded.
-The following table reports the render time for the four main scenes. Note that the parsing and total timers were not fully implemented at the time of this measurement, so only the render stage is reported. All timings are from a single-threaded run on an Apple M2 Pro.
+% Both current high-spp DRT measurements were collected serially.
+% Creative rows now use serial renders with the added polished tray (1230 primitives).
+% The renderer itself is single-threaded; tray reflections are an artistic addition.
+Table~\ref{tab:profiling} reports the existing render-stage log measurements on an Apple M2 Pro. The renderer is single-threaded and compiled with Apple clang, C++17 and \texttt{-O3}. Parsing and total timers did not produce complete stage measurements, so they are not included. Both updated DRT measurements were collected serially. The table records actual runs, not a uniformly controlled performance baseline.
 
 \begin{table}[H]
     \centering
@@ -161,19 +301,44 @@ The following table reports the render time for the four main scenes. Note that 
         \textbf{Scene} & \textbf{Resolution} & \textbf{Samples/Pixel} & \textbf{Max Depth} & \textbf{Primitives} & \textbf{Render Time (s)} \\
         \midrule
         WSRT\_simple & 900x560 & 1 & 8 & 8 & 0.461692 \\
-        WSRT\_creative & 960x600 & 1 & 12 & 47 & 3.801205 \\
-        DRT\_simple & 600x400 & 32 & 4 & 336 & 66.585001 \\
-        DRT\_creative & 480x320 & 24 & 4 & 682 & 82.613686 \\
+        WSRT\_creative & 960x640 & 1 & 10 & 1230 & 22.864423 \\
+        DRT\_simple & 600x400 & 128 & 4 & 336 & 252.429880 \\
+        DRT\_creative & 480x320 & 96 & 5 & 1230 & 437.498226 \\
         \bottomrule
     \end{tabular}
     }
-    \caption{Render times for Module 1 scenes.}
+    \caption{Logged render-stage times for the current Module 1 images. Samples per pixel are primary rays for WSRT and lens/light samples at fixed pixel centres for DRT. Both DRT runs were serial.}
     \label{tab:profiling}
 \end{table}
 
-\section{Conclusion}
-In this module, I successfully implemented a Whitted-Style Ray Tracer and a Distributed Ray Tracer from scratch. The WSRT correctly handles specular reflection, refraction, Blinn-Phong shading, shadows, and textures. The DRT extends this with OBJ mesh loading, area light sampling for soft shadows, a Phong BRDF, depth of field, and Reinhard tone mapping.
+The creative scenes expand to 1230 intersection primitive, include the bottle, rod and rack meshes and the two tray triangles. Their cost is affected by linear traversal of these primitives and recursive mirror/dielectric paths. DRT additionally averages 96 or 128 lens/light samples per pixel. Resolution, geometry, maximum depth, light type and materials vary across rows, so the timings cannot isolate any one feature's cost. No BVH is implemented in this module. The retained BF field does not introduce diffuse branching in the current integrator and should not be interpreted as four diffuse paths per bounce.
 
-The main difficulties were fixing the sign conventions for refraction and ensuring consistent \( t \) values after transformations. Future work will focus on adding a BVH acceleration structure (Module 3) to handle complex scenes more efficiently.
+\section{Conclusion}
+The simple images provide identifiable examples of mirror reflection, glass refraction, local highlights, shadows, UV textures and geometry. The updated creative reconstruction combines these features in a photograph-inspired laptop and source track scene. Its added tray makes recursive reflections especially clear. WSRT produces sharp point-light shadow boundaries, while DRT adds area-light penumbras, mesh textures and thin-lens sampling; Monte Carlo grain remains visible at the reported sample counts.
+
+The main implementation difficulties were consistent incident/outward direction conventions, correct dielectric entry and exit handling, and preservation of intersection parameters and normals under transformations. Numerical tests supply evidence where visual inspection is insufficient, particularly for TIR, energy bounds and tone-mapping formulas. Useful next steps are a same-scene pinhole reference for defocus, uniformly serial profiling and later BVH acceleration for the mesh-heavy creative scenes.
+
+% Bibliographic metadata and locators checked against the local docs/ copies.
+% Page numbers refer to PDF pages. Notes/transcript do not identify an author or date.
+% Shirley's Ch. 9 is cited for Snell's law, not our exact Fresnel implementation:
+% that edition uses Schlick's approximation and stochastic branch selection.
+\begin{thebibliography}{9}
+\raggedright
+
+\bibitem{cgr-notes}
+\emph{Computer Graphics Rendering---Complete Lecture Notes}.
+Undated lecture-note compilation, Parts~I, III, IV and VI.
+
+\bibitem{cgr-transcript}
+\emph{Computer Graphics: Rendering}.
+Undated lecture, Speaker discussions of ray casting,
+nearest intersections, hit records and shading.
+
+\bibitem{shirley2018}
+Peter Shirley.
+\emph{Ray Tracing in One Weekend}, version~1.54, 2018.
+Chapters~8 (Metal), 9 (Dielectrics) and 11 (Defocus Blur).
+
+\end{thebibliography}
 
 \end{document}

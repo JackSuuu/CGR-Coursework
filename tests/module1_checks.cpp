@@ -1,5 +1,6 @@
 // Analytic checks: expected values come from geometry/optics, not old renders.
 #include <cmath>
+#include <iomanip>
 #include <iostream>
 #include <string>
 
@@ -29,6 +30,12 @@ bool Near(Vec3 a, Vec3 b, double tolerance = 1e-8) {
 bool Near(Color a, Color b, double tolerance = 1e-8) {
     return Near(a.r, b.r, tolerance) && Near(a.g, b.g, tolerance) && Near(a.b, b.b, tolerance);
 }
+// Measured values supplement the PASS labels; they are not extra test cases.
+void Evidence(const std::string& id, double actual, double expected) {
+    std::cout << std::setprecision(12) << "EVIDENCE " << id
+              << " actual=" << actual << " expected=" << expected
+              << " abs_error=" << std::fabs(actual - expected) << '\n';
+}
 }
 
 int main() {
@@ -38,17 +45,22 @@ int main() {
     Vec3 incident = Normalize(Vec3(1, -1, 0));
     Vec3 reflected = Reflect(-incident, n);
     Check(Near(reflected.x, incident.x) && Near(reflected.y, -incident.y), "mirror preserves tangent, reverses normal component");
+    Evidence("mirror.tangent_x", reflected.x, incident.x);
+    Evidence("mirror.normal_y", reflected.y, -incident.y);
 
     Vec3 transmitted;
     Check(RefractIncident(Vec3(0, -1, 0), n, 1, 1.5, &transmitted) &&
           Near(transmitted, Vec3(0, -1, 0)), "glass normal incidence continues forward");
     incident = Vec3(0.5, -std::sqrt(0.75), 0);
     Check(RefractIncident(incident, n, 1, 1.5, &transmitted) && Near(transmitted.x, 1.0 / 3.0), "Snell: air to glass at 30 degrees");
+    Evidence("snell.air_glass_30.sin_theta_t", transmitted.x, 1.0 / 3.0);
     Vec3 exited;
     Check(RefractIncident(transmitted, n, 1.5, 1, &exited) && Near(exited, incident), "parallel interfaces restore the incident direction");
     Check(!RefractIncident(Vec3(std::sqrt(0.75), -0.5, 0), n, 1.5, 1, &transmitted), "glass to air at 60 degrees has total internal reflection");
     Check(Near(FrDielectric(1, 1.5), 0.04), "Fresnel normal-incidence air/glass reflectance = 4 percent");
     Check(Near(FrDielectric(0.5, 1.0 / 1.5), 1), "Fresnel TIR reflectance = 1");
+    Evidence("fresnel.normal_incidence.R", FrDielectric(1, 1.5), 0.04);
+    Evidence("fresnel.glass_air_60.R", FrDielectric(0.5, 1.0 / 1.5), 1);
     Check(Near(FrDielectric(0, 1), 0), "identical media have no Fresnel reflection, even at grazing incidence");
 
     Sphere sphere(1);
@@ -83,6 +95,7 @@ int main() {
     Point3 fa = a((10 - Dot(a.o - camera.position, camera.forward)) / Dot(a.d, camera.forward));
     Point3 fb = b((10 - Dot(b.o - camera.position, camera.forward)) / Dot(b.d, camera.forward));
     Check(Near(fa, fb), "different lens origins converge on the same planar focus point");
+    Evidence("camera.planar_focus.point_distance", Length(fa - fb), 0);
     camera.ConfigurePerspective(60, Point3(0), Point3(0, 0, -1), Vec3(1, 0, 0), film);
     Check(Near(camera.CameraUp(), Vec3(1, 0, 0)), "camera honours supplied up vector");
     Transform viewTransform = Transform::LookAt(Point3(3, 2, 5), Point3(0), Vec3(0, 1, 0));
@@ -108,12 +121,17 @@ int main() {
             }
         }
         conservative = conservative && energy.r <= 1.0001 && energy.r >= 0;
+        std::cout << std::setprecision(12) << "EVIDENCE phong.hemisphere"
+                  << " view_angle_degrees=" << angle << " actual=" << energy.r
+                  << " upper_bound=1.0001 grid=256x256\n";
     }
     Check(conservative, "Phong hemispherical reflected energy <= incident energy at 0/45/80 degrees");
     material->specular = Color(0);
     Check(Near(material->F(Vec3(0, 0, 1), Vec3(0, 0, 1), Vec3(0, 0, 1), Color(0)), Color(0)), "black diffuse texel yields zero diffuse BRDF");
     Check(Near(ToneMapReinhard(Color(4), 4, true), Color(1)), "extended Reinhard maps white point to display white");
     Check(Near(ToneMapReinhard(Color(0.5), 1, true), Color(0.5)), "Reinhard W=1 identity (not an implementation failure)");
+    Evidence("reinhard.c4_W4", ToneMapReinhard(Color(4), 4, true).r, 1);
+    Evidence("reinhard.c0_5_W1", ToneMapReinhard(Color(0.5), 1, true).r, 0.5);
 
     std::string error;
     auto reportMesh = LoadOBJ("scenes/meshes/uv_geodesic.obj", &error);
@@ -146,6 +164,8 @@ int main() {
     Point3 corner = panel->SamplePoint(Point2(0, 0), &ln);
     Check(Near(corner, Point3(-1, -1, -2)) && Near(panel->Area(), 4) && panel->samples == 3, "rectangle samples actual corners, area, configurable density");
     Check(Near(panel->Pdf(Point3(0), Vec3(0, 0, -1)), 1), "area-to-solid-angle PDF = distance squared / (area*cos)");
+    Evidence("rectangle.fixture.area", panel->Area(), 4);
+    Evidence("rectangle.fixture.solid_angle_pdf", panel->Pdf(Point3(0), Vec3(0, 0, -1)), 1);
     auto* disc = dynamic_cast<AreaLight*>(parsed.scene.lights[1].get());
     Check(Near(disc->SamplePoint(Point2(0, 0), &ln), Point3(0, 0, -4)), "disc scene transform applied");
     ParseResult broken = ParseSceneFile("tests/fixtures/broken.pbrt");

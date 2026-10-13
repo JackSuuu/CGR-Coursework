@@ -1,0 +1,174 @@
+{
+  "checks": {
+    "command": [
+      "build/module1_checks"
+    ],
+    "log": "module1_checks.log",
+    "collected_utc": "2026-10-12T11:43:33.445629+00:00",
+    "source_sha256": "88d89af7202c4f0dc2e726c93fa6f43ab0b783d7abfd0c8f1c4cb9e785d32d3d",
+    "log_sha256": "c7c53182ddaa7293f42ba66d9b826e9328749a23ac6e80d45fc0198a36ef6264"
+  },
+  "render_environment": {
+    "collected_utc": "2026-10-12T11:43:33.452875+00:00",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "cpu": "Apple M2 Pro",
+    "compiler": "Apple clang version 21.0.0 (clang-2100.1.1.101)\nTarget: arm64-apple-darwin27.0.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+    "execution": "serial, one renderer process at a time; OS background load uncontrolled",
+    "renderer_sha256": "85c2b0f27b7c6bfe529ee4939522146c7d75caa0bb0c3607a673cad6e67ff958",
+    "makefile_sha256": "8c405dee98c996be13b8c828a02abb26d05646f529f4883da0683f4a41e3f03f",
+    "asset_sha256": {
+      "meshes/cafe_bottle.obj": "1d38c901ed76ca63f42a2be0415a739235ac4a9f98a907443cf532488f27671c",
+      "meshes/cafe_label_band.obj": "a226044e7e26b37fe028499989314c2d37aa2cca3d26fb00a54241db821c5fcb",
+      "meshes/cafe_rack_ring.obj": "dab34e23b43185eea452438cd9a2464bea313a33187d769524ff5a4346eace4b",
+      "meshes/cafe_rod.obj": "f7e186d8e651edf3bce659532ecad381304c73b3e0733dee974761b9521554de",
+      "meshes/display_box.obj": "d1a0cfcb902029757b780f0a0657c3ba9785d021599264ac471fdfa49a450c3d",
+      "meshes/uv_geodesic.obj": "5f39b3efce5ba92b65a3a6fde5c9c5f7c0ce8d6323dc73ac9a343afdc55d5943",
+      "textures/broad_checker.ppm": "f43f707c92f1eccd847b8b53361650d0efdfb92f39fbcafbfaa96499cf3875d2",
+      "textures/cafe_label.ppm": "68d02d0832e6782f842f242f564b5abbd52c72ae7492781dace15ea2c2d024ec",
+      "textures/cafe_marble.ppm": "89bd07aaf4977134e8cc7c79bf19ddbfd1f6cafa19ede7a54c118b65195e4243",
+      "textures/laptop_keys.ppm": "8cda8baa4b4ddb099f4749fe10b3c6bce7ede67038a9cb6781c5377c01f6db7f",
+      "textures/laptop_screen.ppm": "679fe07cffbc3a89e3675b332a0e9226707a2ef585d8ed3ad1a5c29416e203eb",
+      "textures/wood.ppm": "424bee22eb29157565afb1f75002d33a8c1895623132f3da81e9f0bf464153b1"
+    }
+  },
+  "renders": [
+    {
+      "command": [
+        "/Users/jacksu/Desktop/CGR/cw/output/CGR26_renderer",
+        "/Users/jacksu/Desktop/CGR/cw/scenes/WSRT_simple.pbrt",
+        "-o",
+        "/Users/jacksu/Desktop/CGR/cw/output/module1-evidence",
+        "-n",
+        "WSRT_simple",
+        "-q"
+      ],
+      "started_utc": "2026-10-12T11:43:33.489879+00:00",
+      "scene_sha256": "09143263e73c57d07ffd3287a1fee81e9cc939894f5b74ee8a70c7c041573193",
+      "image_sha256": "66616ab5430c949e5c9f7409af7985b1f4f99561c21d464510b23006bc852291",
+      "log": "WSRT_simple.log",
+      "measurement": {
+        "scene": "WSRT_simple",
+        "resolution": "900x560",
+        "spp": 1,
+        "max_depth": 8,
+        "primitives": 8,
+        "render_seconds": 0.160064
+      }
+    },
+    {
+      "command": [
+        "/Users/jacksu/Desktop/CGR/cw/output/CGR26_renderer",
+        "/Users/jacksu/Desktop/CGR/cw/scenes/WSRT_creative.pbrt",
+        "-o",
+        "/Users/jacksu/Desktop/CGR/cw/output/module1-evidence",
+        "-n",
+        "WSRT_creative",
+        "-q"
+      ],
+      "started_utc": "2026-10-12T11:43:33.685805+00:00",
+      "scene_sha256": "4f97a06c626cd8f8f4e2ef9f4f944966b9f7ce8e5c3e0b47257986dc20c46e8c",
+      "image_sha256": "943a25f6b16fc251d25f0f03bf17069cc913bcf5b9f89d3c99404d20134bc57a",
+      "log": "WSRT_creative.log",
+      "measurement": {
+        "scene": "WSRT_creative",
+        "resolution": "960x640",
+        "spp": 1,
+        "max_depth": 10,
+        "primitives": 1230,
+        "render_seconds": 19.534114
+      }
+    },
+    {
+      "command": [
+        "/Users/jacksu/Desktop/CGR/cw/output/CGR26_renderer",
+        "/Users/jacksu/Desktop/CGR/cw/scenes/DRT_simple.pbrt",
+        "-o",
+        "/Users/jacksu/Desktop/CGR/cw/output/module1-evidence",
+        "-n",
+        "DRT_simple",
+        "-q"
+      ],
+      "started_utc": "2026-10-12T11:43:53.270114+00:00",
+      "scene_sha256": "fb431dffbed862665a11840e2a94364a28350420c2eb168289965c4bffbb20f9",
+      "image_sha256": "d8224a5ec1392a46e418fadf7b6a72aeef1c50d7facc9541c6d89a670e7bcd15",
+      "log": "DRT_simple.log",
+      "measurement": {
+        "scene": "DRT_simple",
+        "resolution": "600x400",
+        "spp": 32,
+        "max_depth": 4,
+        "primitives": 336,
+        "render_seconds": 64.005217
+      }
+    },
+    {
+      "command": [
+        "/Users/jacksu/Desktop/CGR/cw/output/CGR26_renderer",
+        "/Users/jacksu/Desktop/CGR/cw/scenes/DRT_creative.pbrt",
+        "-o",
+        "/Users/jacksu/Desktop/CGR/cw/output/module1-evidence",
+        "-n",
+        "DRT_creative",
+        "-q"
+      ],
+      "started_utc": "2026-10-12T11:44:57.301343+00:00",
+      "scene_sha256": "74ba99c67c57a5cd92096cbbd6cd585926fc81cba822f3b7b7ef80e255d3a9ab",
+      "image_sha256": "e5e641ffa86ced3bc1aa75096feba1ddf65ef115b0e433bac8a74eb9a502a855",
+      "log": "DRT_creative.log",
+      "measurement": {
+        "scene": "DRT_creative",
+        "resolution": "480x320",
+        "spp": 24,
+        "max_depth": 5,
+        "primitives": 1230,
+        "render_seconds": 108.098545
+      }
+    },
+    {
+      "command": [
+        "/Users/jacksu/Desktop/CGR/cw/output/CGR26_renderer",
+        "/Users/jacksu/Desktop/CGR/cw/scenes/DRT_simple_pinhole.pbrt",
+        "-o",
+        "/Users/jacksu/Desktop/CGR/cw/output/module1-evidence",
+        "-n",
+        "DRT_simple_pinhole",
+        "-q"
+      ],
+      "started_utc": "2026-10-12T11:46:45.429020+00:00",
+      "scene_sha256": "3cf9ded78640e20a61ce2756c9bee0da7aa2babfd1056c6a5fa6141233c71dbb",
+      "image_sha256": "d092ff84f393636a131869ae8d084413b6e9d2e3da700fa0883ba64b5ac2b2d9",
+      "log": "DRT_simple_pinhole.log",
+      "measurement": {
+        "scene": "DRT_simple_pinhole",
+        "resolution": "600x400",
+        "spp": 32,
+        "max_depth": 4,
+        "primitives": 336,
+        "render_seconds": 60.952448
+      }
+    },
+    {
+      "command": [
+        "/Users/jacksu/Desktop/CGR/cw/output/CGR26_renderer",
+        "/Users/jacksu/Desktop/CGR/cw/scenes/DRT_creative_pinhole.pbrt",
+        "-o",
+        "/Users/jacksu/Desktop/CGR/cw/output/module1-evidence",
+        "-n",
+        "DRT_creative_pinhole",
+        "-q"
+      ],
+      "started_utc": "2026-10-12T11:47:46.404042+00:00",
+      "scene_sha256": "aa4f714f5b493792681168574a02a28d2d7af3b8c1b91c2e003c761ace80ef14",
+      "image_sha256": "3cc013021567a39675d91539a397b7a1026163b0df7c14f7b55fb8d404e60949",
+      "log": "DRT_creative_pinhole.log",
+      "measurement": {
+        "scene": "DRT_creative_pinhole",
+        "resolution": "480x320",
+        "spp": 24,
+        "max_depth": 5,
+        "primitives": 1230,
+        "render_seconds": 107.015365
+      }
+    }
+  ]
+}

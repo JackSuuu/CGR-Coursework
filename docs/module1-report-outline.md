@@ -26,7 +26,7 @@
 
 - [ ] 自己说明 `Reflect(wo,n)` 的方向约定与递归过程。
 - [ ] 说明反射率、throughput、最大深度分别控制什么。
-- [ ] 选择 `WSRT_simple` 镜面球或 `WSRT_creative` 两侧镜面球区域。
+- [ ] 选择 `WSRT_simple` 镜面球或 `WSRT_creative` 抛光托盘上的瓶身/标签倒影区域。
 - [ ] 给出镜面方向/实际反射路径的测试证据。
 
 代码索引：`source/core/vec.h::Reflect`；`source/integrator/whitted.cpp::Radiance`。
@@ -35,7 +35,7 @@
 
 - [ ] 自己说明 Snell 定律、Fresnel 分光和 TIR。
 - [ ] 解释代码如何区分玻璃入口和出口。
-- [ ] 标注 `WSRT_simple` 玻璃球或 `WSRT_creative` 中间玻璃椭球。
+- [ ] 标注 `WSRT_simple` 玻璃球或 `WSRT_creative` 的 amberBottle 玻璃瓶。
 - [ ] 核对 30° 折射、正入射 4% Fresnel、60° 玻璃到空气 TIR 等测试。
 - [ ] 不把普通透明效果直接当作图中发生 TIR 的证明。
 
@@ -82,9 +82,9 @@
 
 ### WSRT 图片材料
 
-- [ ] `output/WSRT_simple.png`：功能展示图，附本人图注和标注。
-- [ ] `output/WSRT_creative.png`：创意图，附本人拍摄的参考照片。
-- [ ] 自己说明照片中哪些物体/布局启发了创意场景；当前构图尚无真实照片。
+- [x] `output/WSRT_simple_annotated.png`：已有 A–G 圈选/箭头，图注仍由本人核对。
+- [x] `output/WSRT_creative_annotated.png`：已有 A–D 圈选/箭头，报告并排引用用户提供的参考照片。
+- [ ] 自己说明 `scenes/photograph/cgr_ref_img.jpg` 中哪些物体/布局对应创意场景。
 
 # 2. Distributed Ray Tracer（DRT）
 
@@ -147,10 +147,10 @@
 | 图片 | 分辨率 | spp | 光圈半径 | 焦距 | 白点 | 模式 |
 |---|---|---:|---:|---:|---:|---|
 | `DRT_simple` | 600×400 | 32 | 0.18 | 9.0 | 8 | per-channel |
-| `DRT_creative` | 480×320 | 24 | 0.18 | 13.5 | 8 | per-channel |
+| `DRT_creative` | 480×320 | 24 | 0.14 | 10.0 | 8 | per-channel |
 
-- [ ] `output/DRT_simple.png`：附本人特性标注。
-- [ ] `output/DRT_creative.png`：附真实参考照片、本人构图说明和标注。
+- [x] `output/DRT_simple_annotated.png`：已有 A–E 圈选/箭头及全图 Reinhard 参数栏。
+- [x] `output/DRT_creative_annotated.png`：已有 A–D 圈选/箭头，报告保留参考照片；本人构图说明待填写。
 - [ ] 这些参数如发生改动，重新核对 `.pbrt` 和 `.log`。
 
 # 3. PBRT Scene Compatibility

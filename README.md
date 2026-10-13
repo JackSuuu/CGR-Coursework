@@ -110,9 +110,9 @@ This builds the project and then renders every image shown in the report into
 | Scene | Integrator | What it demonstrates |
 |---|---|---|
 | `scenes/WSRT_simple.pbrt` | `whitted` | mirror reflection, refraction, Blinn-Phong, point lights and hard shadows, PPM textures on spheres, planes and triangles |
-| `scenes/WSRT_creative.pbrt` | `whitted` | provisional tabletop optics composition with books, mirrors and glass; real inspiration photograph pending |
+| `scenes/WSRT_creative.pbrt` | `whitted` | photo-inspired cafe laptop, marble table, chrome condiment rack and capped bottles; point lights and hard shadows |
 | `scenes/DRT_simple.pbrt` | `distributed` | OBJ triangle mesh with smooth normals and UV textures, area lights and soft shadows, Phong BRDF, thin-lens depth of field, Reinhard tone mapping |
-| `scenes/DRT_creative.pbrt` | `distributed` | provisional tabletop composition with textured meshes, books, reflective/glass objects and depth of field; real photograph pending |
+| `scenes/DRT_creative.pbrt` | `distributed` | the same photo-inspired cafe layout using textured meshes, area lights, soft shadows and a thin lens |
 
 Textures live in `scenes/textures/`, meshes in `scenes/meshes/`. Relative paths
 inside a scene file are resolved against the directory of that scene file, so
@@ -120,7 +120,7 @@ the scenes can be launched from any working directory.
 
 ### Scene resolutions
 
-`WSRT_*` renders at 900x560 / 960x600. `DRT_simple` renders at 600x400 with
+`WSRT_*` renders at 900x560 / 960x640. `DRT_simple` renders at 600x400 with
 32 lens/light samples per pixel; `DRT_creative` at 480x320 with 24 samples.
 This checkpoint intersects every primitive
 with a linear scan (the bounding volume hierarchy arrives in Module 3), and the
@@ -138,6 +138,36 @@ are already included in `scenes/`. `uv_geodesic.obj` has 320 non-overlapping
 triangle faces, explicit smooth normals and seam-adjusted UVs. `display_box.obj`
 has 12 triangles with face normals and UVs. Broad checker, wood and paper
 textures are procedural P3 PPMs. They are not real inspiration photographs.
+
+The two creative scenes use the user's photograph at
+`scenes/photograph/cgr_ref_img.jpg` as the composition reference. Regenerate
+their OBJ/PPM assets and scene files with:
+
+```sh
+python3 scripts/generateCafeCreative.py
+```
+
+This creates stylised laptop screen/keyboard textures, a marble texture,
+closed bottle/rod meshes, label bands and a chrome rack ring. A broad polished
+tray is an artistic addition that makes recursive bottle/label reflections
+clearly visible. The original
+JPEG is preserved; it is not a texture pasted over the render. The laptop
+screen is a self-lit material but does not illuminate the room through
+indirect transport. See `docs/module1-reference-scene.md` for object mappings.
+
+The report uses separate `output/*_annotated.png` diagrams with lettered region
+circles and arrows. Regenerate them after rendering with:
+
+```sh
+python3 scripts/annotateModule1Images.py
+```
+
+This optional presentation tool requires Python, Pillow and a TrueType font
+(`--font` can supply one). It preserves the renderer's original PNGs/logs and
+does not add dependencies to the C++ renderer. Region coordinates are tied to
+the current scene layouts; see `docs/module1-image-regions.md` for feature IDs,
+parameters and evidence limits. Creative captions and observations still need
+student-authored updates, as required by the coursework's AI-writing rule.
 
 ## Running the student test suite
 
@@ -195,8 +225,8 @@ direct illumination/shadows and Reinhard values against analytic expectations.
   Standard diffuse area sources support spherical or four-corner mesh emitters;
   non-rectangular trianglemesh emitters are visible but not explicitly sampled.
 
-The submission still needs the user's real inspiration photographs, image
-annotations and `reports/Module1.pdf`. Report writing and AI-use disclosure
+The reference photograph is now included; the submission still needs the user's
+image annotations, updated explanations and `reports/Module1.pdf`. Report writing and AI-use disclosure
 are the student's responsibility under the coursework rules.
 
 The technical output index, measured log values and student report checklist
